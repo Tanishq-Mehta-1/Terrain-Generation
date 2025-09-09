@@ -38,7 +38,7 @@ void main()
 	vec4 depthVec4 = vec4(vec3(pow(depth, 0.9)), 1.0);
 	col = col * (1 - depthVec4) + depthVec4;
 
-//	col = pow(col, vec4(1.0f/2.2f));
+	col = pow(col, vec4(1.0f/2.2f));
 
 	FragColor = col;
 }

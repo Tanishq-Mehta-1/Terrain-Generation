@@ -126,7 +126,7 @@ int main()
 			vertices.push_back(-width / 2.0f + j);
 		}
 	}*/
-	int mapSize_x = 2048, mapSize_y = 2048; //only squares, rectangles cause strips
+	int mapSize_x = 1024, mapSize_y = 1024; //only squares, rectangles cause strips
 	double persistence = 0.5, scale = 0.002; //keep scale v small
 	int octaves = 16;
 	std::vector<float> data(mapSize_x * mapSize_y, 0);
@@ -155,7 +155,12 @@ int main()
 	}
 
 	//write to png
-	stbi_write_png("perlin.png", mapSize_x, mapSize_y, 1, image.data(), mapSize_x);
+
+	std::string size = std::to_string(mapSize_x) + 'x' + std::to_string(mapSize_y);
+	std::string p = std::to_string(persistence);
+	std::string s = std::to_string(scale);
+	std::string name = "Media/Generated/perlin_" + size + "_p" + p + "_s" + s + '_' + ".png";
+	stbi_write_png(name.c_str(), mapSize_x, mapSize_y, 1, image.data(), mapSize_x);
 
 	std::vector<float> vertices;
 	float yScale = 512.0f, yShift = 256.0f; //range from -256 to 256
