@@ -144,6 +144,7 @@
     <ClInclude Include="Vendors\camera.h" />
     <ClInclude Include="Vendors\shader.h" />
     <ClInclude Include="Vendors\stb_image.h" />
+    <ClInclude Include="Vendors\stb_image_write.h" />
     <ClInclude Include="Vendors\textureLoader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

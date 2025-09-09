@@ -61,5 +61,8 @@
     <ClInclude Include="Source\framebuffer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="Vendors\stb_image_write.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

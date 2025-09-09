@@ -1,14 +1,20 @@
-﻿#include <camera.h>
+﻿#define _CRT_SECURE_NO_WARNINGS
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+#include <cstdio>
+
+#include <camera.h>
 #include <vector>
 
 #include <GLFW/glfw3.h>
- 
+
 #include <stb_image.h>
 #include <glm/gtc/type_ptr.hpp>
 
 #include <shader.h>
 #include <iostream>
 #include "perlin.h"
+
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
@@ -120,10 +126,11 @@ int main()
 			vertices.push_back(-width / 2.0f + j);
 		}
 	}*/
-	int mapSize_x = 1024, mapSize_y = 1024; //only squares, rectangles cause strips
+	int mapSize_x = 2048, mapSize_y = 2048; //only squares, rectangles cause strips
 	double persistence = 0.5, scale = 0.002; //keep scale v small
-	int octaves = 7;
+	int octaves = 16;
 	std::vector<float> data(mapSize_x * mapSize_y, 0);
+	std::vector<unsigned char> image(mapSize_x * mapSize_y);
 
 	for (int i = 0; i < mapSize_x; i++) {
 		for (int j = 0; j < mapSize_y; j++) {
@@ -143,22 +150,45 @@ int main()
 			//data[i * mapSize_y + j] = std::max(0.0f, std::min(1.0f, height));
 
 			data[i * mapSize_y + j] = perlin.octavePerlin(x, y, octaves, persistence); //output is between 0,1
+			image[j * mapSize_x + i] = static_cast<unsigned char>(data[i * mapSize_y + j] * 255.0f);
 		}
 	}
 
-	std::vector<float> vertices;
-	float yScale = 512.0f, yShift = 256.0f;
+	//write to png
+	stbi_write_png("perlin.png", mapSize_x, mapSize_y, 1, image.data(), mapSize_x);
 
-	//range from -256 to 256
+	std::vector<float> vertices;
+	float yScale = 512.0f, yShift = 256.0f; //range from -256 to 256
+	float seaLevel = -50.0f;
 
 	for (int i = 0; i < mapSize_x; i++) {
 		for (int j = 0; j < mapSize_y; j++) {
 
 			double y = data[i * mapSize_y + j];
+			float height = y * yScale - yShift;
+			if (height < seaLevel) height = seaLevel;
 
-			vertices.push_back(-mapSize_x/ 2.0f + i);
-			vertices.push_back(y * yScale - yShift);
-			vertices.push_back(-mapSize_y/ 2.0f + j);
+			vertices.push_back(-mapSize_x / 2.0f + i);
+			vertices.push_back(height);
+			vertices.push_back(-mapSize_y / 2.0f + j);
+
+			//calculate normals
+			float hL, hR, hU, hD;
+			hL = hR = hD = hU = y;
+
+			if (i != 0)
+				hL = data[(i - 1) * mapSize_y + j] * yScale - yShift; // left
+			if (i != mapSize_x - 1)
+				hR = data[(i + 1) * mapSize_y + j] * yScale - yShift; // right
+			if (j != 0)
+				hD = data[i * mapSize_y + j - 1] * yScale - yShift; // down
+			if (j != mapSize_y - 1)
+				hU = data[i * mapSize_y + j + 1] * yScale - yShift; // up
+
+			glm::vec3 normal = glm::normalize(glm::vec3(hL - hR, 2.0f, hD - hU));
+			vertices.push_back(normal.x);
+			vertices.push_back(normal.y);
+			vertices.push_back(normal.z);
 		}
 	}
 
@@ -193,8 +223,11 @@ int main()
 		GL_STATIC_DRAW);
 
 	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
+	// normal attribute
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	glGenBuffers(1, &terrainEBO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, terrainEBO);
@@ -217,7 +250,7 @@ int main()
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		objectShader.use();
 
-		glm::vec3 bgCol = glm::vec3(0.53, 0.81, 0.92);
+		glm::vec3 bgCol = glm::vec3(1.0);
 		glClearColor(bgCol.x, bgCol.y, bgCol.z, 1.0);
 		glEnable(GL_DEPTH_TEST);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -229,6 +262,8 @@ int main()
 		glm::mat4 view = camera.getViewMatrix();
 		objectShader.setMat4("projection", projection);
 		objectShader.setMat4("view", view);
+		objectShader.setFloat("minHeight", seaLevel);
+		objectShader.setFloat("maxHeight", yScale - yShift);
 
 		// world transformation
 		glm::mat4 model = glm::mat4(1.0f);
