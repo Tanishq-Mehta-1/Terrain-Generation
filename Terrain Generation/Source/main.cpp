@@ -14,6 +14,7 @@
 #include <shader.h>
 #include <iostream>
 #include "perlin.h"
+#include <fstream>
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -43,7 +44,7 @@ bool firstMouse{ true };
 bool toggleWireframe{ false };
 
 //camera setup
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), yaw, pitch);
+Camera camera(glm::vec3(0.0f, 100.0f, 100.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), yaw, pitch);
 
 PerlinGen perlin(1000);
 
@@ -87,11 +88,11 @@ int main()
 
 
 	Shader objectShader(
-		"Shaders/object.vert",
-		"Shaders//object.frag");
+		"C:\\Users\\tanis\\source\\repos\\Terrain Generation\\Terrain Generation\\Shaders\\object.vert",
+		"C:\\Users\\tanis\\source\\repos\\Terrain Generation\\Terrain Generation\\Shaders\\object.frag");
 	Shader screenShader(
-		"Shaders/post_process.vert",
-		"Shaders/post_process.frag");
+		"C:\\Users\\tanis\\source\\repos\\Terrain Generation\\Terrain Generation\\Shaders\\post_process.vert",
+		"C:\\Users\\tanis\\source\\repos\\Terrain Generation\\Terrain Generation\\Shaders\\post_process.frag");
 
 
 	//GL_STATES
@@ -126,14 +127,14 @@ int main()
 			vertices.push_back(-width / 2.0f + j);
 		}
 	}*/
-	int mapSize_x = 1024, mapSize_y = 1024; //only squares, rectangles cause strips
-	double persistence = 0.5, scale = 0.002; //keep scale v small
+	int mapSize_x = 1024, mapSize_z = 1024; //only squares, rectangles cause strips
+	double persistence = 0.5, scale = 0.004; //keep scale v small
 	int octaves = 16;
-	std::vector<float> data(mapSize_x * mapSize_y, 0);
-	std::vector<unsigned char> image(mapSize_x * mapSize_y);
+	std::vector<float> data(mapSize_x * mapSize_z, 0);
+	std::vector<unsigned char> image(mapSize_x * mapSize_z);
 
 	for (int i = 0; i < mapSize_x; i++) {
-		for (int j = 0; j < mapSize_y; j++) {
+		for (int j = 0; j < mapSize_z; j++) {
 
 			double x = i * scale;
 			double y = j * scale;
@@ -142,55 +143,58 @@ int main()
 			//double n = perlin.octavePerlin(x * scale, y * scale, octaves, persistence);
 
 			//float nx = (i - mapSize_x / 2.0f) / (mapSize_x / 2.0f);  // -1 → 1
-			//float ny = (j - mapSize_y / 2.0f) / (mapSize_y / 2.0f);  // -1 → 1
+			//float ny = (j - mapSize_z / 2.0f) / (mapSize_z / 2.0f);  // -1 → 1
 			//float dist = sqrt(nx * nx + ny * ny);   
 			//
 			//float falloff = pow(dist, 3.0f);  // try exponents 2–4
 			//float height = n - falloff;
-			//data[i * mapSize_y + j] = std::max(0.0f, std::min(1.0f, height));
+			//data[i * mapSize_z + j] = std::max(0.0f, std::min(1.0f, height));
 
-			data[i * mapSize_y + j] = perlin.octavePerlin(x, y, octaves, persistence); //output is between 0,1
-			image[j * mapSize_x + i] = static_cast<unsigned char>(data[i * mapSize_y + j] * 255.0f);
+			data[i * mapSize_z + j] = perlin.octavePerlin(x, y, octaves, persistence); //output is between 0,1
+			image[i * mapSize_z + j] = static_cast<unsigned char>(data[i * mapSize_z + j] * 255.0f);
 		}
 	}
 
 	//write to png
-
-	std::string size = std::to_string(mapSize_x) + 'x' + std::to_string(mapSize_y);
+	std::string size = std::to_string(mapSize_x) + 'x' + std::to_string(mapSize_z);
 	std::string p = std::to_string(persistence);
 	std::string s = std::to_string(scale);
 	std::string name = "Media/Generated/perlin_" + size + "_p" + p + "_s" + s + '_' + ".png";
-	stbi_write_png(name.c_str(), mapSize_x, mapSize_y, 1, image.data(), mapSize_x);
+	stbi_write_png(name.c_str(), mapSize_x, mapSize_z, 1, image.data(), mapSize_x);
+
+	//TODO: if the file is already generated, just look up the texture and load
 
 	std::vector<float> vertices;
-	float yScale = 512.0f, yShift = 256.0f; //range from -256 to 256
-	float seaLevel = -50.0f;
+	std::ofstream out("normal.txt");
+
+	float yScale = 256.0f, yShift = 128.0f; //range from -256 to 256
+	float seaLevel = -25.0f;
 
 	for (int i = 0; i < mapSize_x; i++) {
-		for (int j = 0; j < mapSize_y; j++) {
+		for (int j = 0; j < mapSize_z; j++) {
 
-			double y = data[i * mapSize_y + j];
+			double y = data[i * mapSize_z + j];
 			float height = y * yScale - yShift;
 			if (height < seaLevel) height = seaLevel;
 
 			vertices.push_back(-mapSize_x / 2.0f + i);
 			vertices.push_back(height);
-			vertices.push_back(-mapSize_y / 2.0f + j);
+			vertices.push_back(-mapSize_z / 2.0f + j);
 
 			//calculate normals
 			float hL, hR, hU, hD;
-			hL = hR = hD = hU = y;
+			hL = hR = hD = hU = height;
 
 			if (i != 0)
-				hL = data[(i - 1) * mapSize_y + j] * yScale - yShift; // left
+				hL = data[(i - 1) * mapSize_z + j] * yScale - yShift; // left
 			if (i != mapSize_x - 1)
-				hR = data[(i + 1) * mapSize_y + j] * yScale - yShift; // right
+				hR = data[(i + 1) * mapSize_z + j] * yScale - yShift; // right
 			if (j != 0)
-				hD = data[i * mapSize_y + j - 1] * yScale - yShift; // down
-			if (j != mapSize_y - 1)
-				hU = data[i * mapSize_y + j + 1] * yScale - yShift; // up
+				hD = data[i * mapSize_z + j - 1] * yScale - yShift; // down
+			if (j != mapSize_z - 1)
+				hU = data[i * mapSize_z + j + 1] * yScale - yShift; // up
 
-			glm::vec3 normal = glm::normalize(glm::vec3(hL - hR, 2.0f, hD - hU));
+			glm::vec3 normal = glm::normalize(glm::vec3((hL - hR) / 2.0f, 1.0f, (hD - hU) / 2.0f));
 			vertices.push_back(normal.x);
 			vertices.push_back(normal.y);
 			vertices.push_back(normal.z);
@@ -201,19 +205,17 @@ int main()
 
 	//stbi_image_free(data);
 	std::vector<unsigned int> indices;
-	for (int i = 0; i < mapSize_y - 1; i++) {
+	for (int i = 0; i < mapSize_z - 1; i++) {
 		for (int j = 0; j < mapSize_x; j++) {
-			for (int k = 0; k < 2; k++) {
-
-				indices.push_back(j + mapSize_x * (i + k));
-			}
+				indices.push_back(i * mapSize_z + j);
+				indices.push_back(j + mapSize_z * (i + 1));
 		}
 	}
 
 	std::cout << "Loaded " << indices.size() << " indices" << std::endl;
 
 	const unsigned int NUM_STRIPS = mapSize_x - 1;
-	const unsigned int NUM_VERT_PER_STRIP = mapSize_y * 2;
+	const unsigned int NUM_VERT_PER_STRIP = mapSize_z * 2;
 
 	// register VAO
 	GLuint terrainVAO, terrainVBO, terrainEBO;
@@ -241,6 +243,15 @@ int main()
 		&indices[0],                           // pointer to first element
 		GL_STATIC_DRAW);
 
+	//setting constant uniforms
+	objectShader.use();
+	glm::vec3 sun_color = glm::vec3(0.98, 0.85, 0.65);
+	glm::vec3 sun_dir = glm::vec3(-0.2, -1.0f, -0.3f);
+	objectShader.setVec3("dir.specular", 1.0f * sun_color);
+	objectShader.setVec3("dir.diffuse", 0.6f * sun_color);
+	objectShader.setVec3("dir.ambient", 0.3f * sun_color);
+	objectShader.setVec3("dir.direction", sun_dir);
+
 	//render loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -255,7 +266,7 @@ int main()
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		objectShader.use();
 
-		glm::vec3 bgCol = glm::vec3(1.0);
+		glm::vec3 bgCol = glm::vec3(1.0f);
 		glClearColor(bgCol.x, bgCol.y, bgCol.z, 1.0);
 		glEnable(GL_DEPTH_TEST);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -263,7 +274,7 @@ int main()
 		objectShader.use();
 
 		// view/projection transformations
-		glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float)screenWidth / (float)screenHeight, 0.1f, 100000.0f);
+		glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float)screenWidth / (float)screenHeight, 0.1f, 10000.0f);
 		glm::mat4 view = camera.getViewMatrix();
 		objectShader.setMat4("projection", projection);
 		objectShader.setMat4("view", view);
@@ -273,6 +284,9 @@ int main()
 		// world transformation
 		glm::mat4 model = glm::mat4(1.0f);
 		objectShader.setMat4("model", model);
+
+		//camera pos uniform
+		objectShader.setVec3("viewPos", camera.Position);
 
 		//draw calls
 		glBindVertexArray(terrainVAO);
@@ -291,7 +305,6 @@ int main()
 		glBindVertexArray(screenVAO);
 		glDisable(GL_DEPTH_TEST);
 		glBindTexture(GL_TEXTURE_2D, fb_color_buffer);
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		//swap buffers [front and back] and polls IO events

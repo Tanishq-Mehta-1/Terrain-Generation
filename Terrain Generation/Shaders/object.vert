@@ -4,7 +4,8 @@ layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aNormal;
 
 out float height;
-out vec3 normal;
+out vec3 Normal;
+out vec3 FragPos;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -19,5 +20,6 @@ void main()
 	//aCol = vec3(col);
 	//height = length(view * model * vec4(aPos.y));
 	height = aPos.y;
-	normal = aNormal;
+	Normal = mat3(transpose(inverse(model))) * aNormal;
+	FragPos = vec3(model * vec4(aPos, 1.0f));
 }
