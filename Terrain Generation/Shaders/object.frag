@@ -11,7 +11,7 @@ float far = maxHeight - minHeight;
 float near = 0.1f;
 
 out vec4 FragColor;
-
+		
 float linearizeDepth(float depth)
 {
 	float ndc = depth * 2.0f - 1.0f;
@@ -19,6 +19,10 @@ float linearizeDepth(float depth)
 }
 
 float lerp(float a, float b, float x) {
+	return a + x * (b-a);
+}
+
+vec4 lerp(vec4 a, vec4 b, float x) {
 	return a + x * (b-a);
 }
 
@@ -42,20 +46,36 @@ void main()
 
 	float param = abs(dot(normalize(Normal), vec3(0.0,1.0,0.0))); //btw 0,1
 
+	vec4 snow = vec4(1.0f);
+	vec4 soil = vec4(0.39,0.29,0.0,1.0f);
+	vec4 rock = vec4(0.3, 0.3, 0.3, 1.0f);
+	vec4 water = vec4(0.0,0.53,0.74,1.0f);
+	vec4 grass = vec4(0.13,0.55,0.13,1.0f);
+
+	float snow_alt = 0.6;
+	float rock_alt = 0.4;
+	float soil_alt = 0.4;
+	float grass_alt = 0.0;
+
 	//determine by altitude
-	if (frac > 0.4)
-		col = vec4(1.0f); //snow
-	else if (frac == 0)
-		col = vec4(0.0,0.53,0.74,1.0f);
+	if (frac >= snow_alt)
+		col = snow; //snow
+	else if (rock_alt < frac )
+		col = lerp( rock, snow, (frac-rock_alt) / (snow_alt - rock_alt)); //rock
+	else if (soil_alt < frac)
+		col = lerp(soil, rock, (frac - soil_alt) / (rock_alt - soil_alt));
+	else if (frac > grass_alt)
+		col = lerp(grass, rock, (frac - grass_alt) / (rock_alt - grass_alt) );
 	else 
-		col = vec4(0.13,0.55,0.13,1.0f);
+		col = water;
+		
 
 	//determine by slope
 	if (frac != 0) {
-		if (param <= 0.60)
-			col = vec4(0.3,0.3,0.3,1.0f);
-		else if (param <= 0.60)
-			col = vec4(0.59,0.29,0.0,1.0f);
+		if (param <= 0.50)
+			col = lerp(rock, col, param);
+		else
+			col += 0.1 * lerp(rock, col, (param - 0.60) / (0.4));
 	}
 
 	  // Blinn-Phong lighting
@@ -67,7 +87,7 @@ void main()
 	
 	//fog
 //	float depth = linearizeDepth(gl_FragCoord.z) / far;
-//	vec4 depthVec4 = vec4(vec3(pow(depth, 1.2)), 1.0);
+//	vec4 depthVec4 = vec4(vec3(pow(depth, 0.9)), 1.0);
 //	result = result * (1 - depthVec4) + depthVec4;
 
 	//gamma correction

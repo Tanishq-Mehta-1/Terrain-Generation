@@ -42,6 +42,7 @@ float yaw{ -90.0f };
 
 bool firstMouse{ true };
 bool toggleWireframe{ false };
+bool write_to_png{ true };
 
 //camera setup
 Camera camera(glm::vec3(0.0f, 100.0f, 100.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), yaw, pitch);
@@ -127,8 +128,13 @@ int main()
 			vertices.push_back(-width / 2.0f + j);
 		}
 	}*/
+
+	//nice settigns:
+	// 1024, p0.45, s0.0035, o16, scale 512, shift 256 white mountains
+
+
 	int mapSize_x = 1024, mapSize_z = 1024; //only squares, rectangles cause strips
-	double persistence = 0.5, scale = 0.004; //keep scale v small
+	double persistence = 0.50, scale = 0.002; //keep scale v small
 	int octaves = 16;
 	std::vector<float> data(mapSize_x * mapSize_z, 0);
 	std::vector<unsigned char> image(mapSize_x * mapSize_z);
@@ -156,19 +162,20 @@ int main()
 	}
 
 	//write to png
-	std::string size = std::to_string(mapSize_x) + 'x' + std::to_string(mapSize_z);
-	std::string p = std::to_string(persistence);
-	std::string s = std::to_string(scale);
-	std::string name = "Media/Generated/perlin_" + size + "_p" + p + "_s" + s + '_' + ".png";
-	stbi_write_png(name.c_str(), mapSize_x, mapSize_z, 1, image.data(), mapSize_x);
+	if (write_to_png) {
+		std::string size = std::to_string(mapSize_x) + 'x' + std::to_string(mapSize_z);
+		std::string p = std::to_string(persistence);
+		std::string s = std::to_string(scale);
+		std::string name = "Media/Generated/perlin_" + size + "_p" + p + "_s" + s + '_' + ".png";
+		stbi_write_png(name.c_str(), mapSize_x, mapSize_z, 1, image.data(), mapSize_x);
+	}
 
 	//TODO: if the file is already generated, just look up the texture and load
 
 	std::vector<float> vertices;
-	std::ofstream out("normal.txt");
 
-	float yScale = 256.0f, yShift = 128.0f; //range from -256 to 256
-	float seaLevel = -25.0f;
+	float yScale = 512.0f, yShift = 256.0f; //range from -256 to 256
+	float seaLevel = -80;
 
 	for (int i = 0; i < mapSize_x; i++) {
 		for (int j = 0; j < mapSize_z; j++) {
