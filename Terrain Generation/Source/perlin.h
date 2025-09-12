@@ -83,6 +83,26 @@ public:
 		return total / maxValue;
 	}
 
+	double octavePerlin(glm::vec2 vec, double octaves, double persistence) {
+		return octavePerlin(vec.x, vec.y, octaves, persistence);
+	}
+
+	double DW_Perlin(glm::vec2 p, float octaves, float persistence) {
+		glm::vec2 q = glm::vec2(
+			octavePerlin(p + glm::vec2(0.0, 0.0), octaves, persistence),
+			octavePerlin(p + glm::vec2(5.2, 1.3), octaves, persistence)
+		);
+
+		glm::vec2 r = glm::vec2(
+			octavePerlin(p + 4.0f * q + glm::vec2(1.7, 9.2), octaves, persistence),
+			octavePerlin(p + 4.0f * q + glm::vec2(8.3, 2.8), octaves, persistence)
+		);
+
+		return octavePerlin(p + 4.0f * r, octaves, persistence);
+
+
+	}
+
 	double static lerp(double a, double b, double t) {
 		return a + t * (b - a);
 	}

@@ -134,8 +134,8 @@ int main()
 	// 1024, p0.45, s0.0035, o16, scale 512, shift 256 white mountains
 
 
-	int mapSize_x = 4072, mapSize_z = 4072; //only squares, rectangles cause strips
-	double persistence = 0.50, scale = 0.002; //keep scale v small
+	int mapSize_x = 512, mapSize_z = 512; //only squares, rectangles cause strips
+	double persistence = 0.40, scale = 0.002; //keep scale v small
 	int octaves = 16;
 
 	std::vector<float> data(mapSize_x * mapSize_z, 0);
@@ -148,7 +148,7 @@ int main()
 	std::string name = "Media/Generated/perlin_" + size + "_p" + p + "_s" + s + "_o" + o + '_' + ".bin";
 
 	std::ifstream perlin_map(name, std::ios::binary);
-	if (perlin_map.fail()) {
+	if (perlin_map.fail() || !write_to_file) {
 
 		std::cout << "Generating data.....\n";
 		/*std::vector<unsigned char> image(mapSize_x * mapSize_z);*/
@@ -163,7 +163,7 @@ int main()
 				double x = i * scale;
 				double y = j * scale;
 
-				data[i * mapSize_z + j] = perlin.octavePerlin(x, y, octaves, persistence); //output is between 0,1
+				data[i * mapSize_z + j] = perlin.DW_Perlin(glm::vec2(x, y), octaves, persistence); //output is between 0,1
 			}
 		}
 
@@ -185,8 +185,8 @@ int main()
 
 	std::vector<float> vertices;
 
-	float yScale = 512.0f, yShift = 256.0f; //range from -256 to 256
-	float seaLevel = -80.0f;
+	float yScale = 128.0f, yShift = 40; //range from -256 to 256
+	float seaLevel = -23;
 
 	for (int i = 0; i < mapSize_x; i++) {
 		for (int j = 0; j < mapSize_z; j++) {
