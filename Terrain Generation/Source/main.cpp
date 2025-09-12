@@ -1,18 +1,19 @@
 ﻿#define _CRT_SECURE_NO_WARNINGS
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
-#include <cstdio>
+#include <cstdio> //for stbi image write
 
 #include <camera.h>
 #include <vector>
 
 #include <GLFW/glfw3.h>
 
+#define STB_IMAGE_IMPLEMENTATION    
 #include <stb_image.h>
 #include <glm/gtc/type_ptr.hpp>
 
 #include <shader.h>
-#include <iostream>
+#include <fstream>
 #include "perlin.h"
 #include <fstream>
 
@@ -42,7 +43,7 @@ float yaw{ -90.0f };
 
 bool firstMouse{ true };
 bool toggleWireframe{ false };
-bool write_to_png{ true };
+bool write_to_file{ true };
 
 //camera setup
 Camera camera(glm::vec3(0.0f, 100.0f, 100.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), yaw, pitch);
@@ -109,7 +110,7 @@ int main()
 	unsigned int screenVAO;
 	generateScreenQuad(screenVAO);
 
-	//loading heightMap
+	//loading heightMap from image
 	/*int width, height, nChannels;
 	stbi_set_flip_vertically_on_load(true);
 	unsigned char* data = stbi_load("textures/iceland_heightmap.png", &width, &height, &nChannels, 0);
@@ -129,53 +130,63 @@ int main()
 		}
 	}*/
 
-	//nice settigns:
+	//nice settigns: (16 octaves is nice)
 	// 1024, p0.45, s0.0035, o16, scale 512, shift 256 white mountains
 
 
-	int mapSize_x = 1024, mapSize_z = 1024; //only squares, rectangles cause strips
+	int mapSize_x = 4072, mapSize_z = 4072; //only squares, rectangles cause strips
 	double persistence = 0.50, scale = 0.002; //keep scale v small
 	int octaves = 16;
+
 	std::vector<float> data(mapSize_x * mapSize_z, 0);
-	std::vector<unsigned char> image(mapSize_x * mapSize_z);
 
-	for (int i = 0; i < mapSize_x; i++) {
-		for (int j = 0; j < mapSize_z; j++) {
+	//check if already present
+	std::string size = std::to_string(mapSize_x) + 'x' + std::to_string(mapSize_z);
+	std::string p = std::to_string(persistence);
+	std::string s = std::to_string(scale);
+	std::string o = std::to_string(octaves);
+	std::string name = "Media/Generated/perlin_" + size + "_p" + p + "_s" + s + "_o" + o + '_' + ".bin";
 
-			double x = i * scale;
-			double y = j * scale;
+	std::ifstream perlin_map(name, std::ios::binary);
+	if (perlin_map.fail()) {
 
-			//Island Generation
-			//double n = perlin.octavePerlin(x * scale, y * scale, octaves, persistence);
+		std::cout << "Generating data.....\n";
+		/*std::vector<unsigned char> image(mapSize_x * mapSize_z);*/
 
-			//float nx = (i - mapSize_x / 2.0f) / (mapSize_x / 2.0f);  // -1 → 1
-			//float ny = (j - mapSize_z / 2.0f) / (mapSize_z / 2.0f);  // -1 → 1
-			//float dist = sqrt(nx * nx + ny * ny);   
-			//
-			//float falloff = pow(dist, 3.0f);  // try exponents 2–4
-			//float height = n - falloff;
-			//data[i * mapSize_z + j] = std::max(0.0f, std::min(1.0f, height));
+		//write as bin file
+		std::ofstream file(name, std::ios::binary);
+		if (!file) throw std::runtime_error("Could not open the file: " + name + '\n');
+		
+		for (int i = 0; i < mapSize_x; i++) {
+			for (int j = 0; j < mapSize_z; j++) {
 
-			data[i * mapSize_z + j] = perlin.octavePerlin(x, y, octaves, persistence); //output is between 0,1
-			image[i * mapSize_z + j] = static_cast<unsigned char>(data[i * mapSize_z + j] * 255.0f);
+				double x = i * scale;
+				double y = j * scale;
+
+				data[i * mapSize_z + j] = perlin.octavePerlin(x, y, octaves, persistence); //output is between 0,1
+			}
+		}
+
+		if (write_to_file) {
+
+			//write to binary
+			file.write(reinterpret_cast<const char*>(data.data()), data.size() * sizeof(float));
+			file.close();
+			std::cout << "Created file: " + name + '\n';
 		}
 	}
+	else {
 
-	//write to png
-	if (write_to_png) {
-		std::string size = std::to_string(mapSize_x) + 'x' + std::to_string(mapSize_z);
-		std::string p = std::to_string(persistence);
-		std::string s = std::to_string(scale);
-		std::string name = "Media/Generated/perlin_" + size + "_p" + p + "_s" + s + '_' + ".png";
-		stbi_write_png(name.c_str(), mapSize_x, mapSize_z, 1, image.data(), mapSize_x);
+		//use the heightmap
+		perlin_map.read(reinterpret_cast<char*>(data.data()), mapSize_x * mapSize_z * sizeof(float));
+		perlin_map.close();
+		std::cout << "loaded file: " + name + '\n';
 	}
-
-	//TODO: if the file is already generated, just look up the texture and load
 
 	std::vector<float> vertices;
 
 	float yScale = 512.0f, yShift = 256.0f; //range from -256 to 256
-	float seaLevel = -80;
+	float seaLevel = -80.0f;
 
 	for (int i = 0; i < mapSize_x; i++) {
 		for (int j = 0; j < mapSize_z; j++) {
@@ -214,8 +225,8 @@ int main()
 	std::vector<unsigned int> indices;
 	for (int i = 0; i < mapSize_z - 1; i++) {
 		for (int j = 0; j < mapSize_x; j++) {
-				indices.push_back(i * mapSize_z + j);
-				indices.push_back(j + mapSize_z * (i + 1));
+			indices.push_back(i * mapSize_z + j);
+			indices.push_back(j + mapSize_z * (i + 1));
 		}
 	}
 
@@ -273,7 +284,7 @@ int main()
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		objectShader.use();
 
-		glm::vec3 bgCol = glm::vec3(1.0f);
+		glm::vec3 bgCol = glm::vec3(0.0f);
 		glClearColor(bgCol.x, bgCol.y, bgCol.z, 1.0);
 		glEnable(GL_DEPTH_TEST);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

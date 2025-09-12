@@ -71,11 +71,12 @@ void main()
 		
 
 	//determine by slope
+	float slope_threshold = 0.55;
 	if (frac != 0) {
-		if (param <= 0.50)
+		if (param <= slope_threshold)
 			col = lerp(rock, col, param);
 		else
-			col += 0.1 * lerp(rock, col, (param - 0.60) / (0.4));
+			col += 0.1 * lerp(rock, col, (param - slope_threshold) / (1 - slope_threshold));
 	}
 
 	  // Blinn-Phong lighting
