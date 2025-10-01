@@ -128,8 +128,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Source\app.cpp" />
-    <ClCompile Include="Source\glad.c" />
+    <ClCompile Include="Vendors\glad.c" />
+    <ClCompile Include="Source\Headers\perlin.cpp" />
     <ClCompile Include="Source\main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -140,7 +140,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\framebuffer.h" />
-    <ClInclude Include="Source\perlin.h" />
+    <ClInclude Include="Source\Headers\perlin.h" />
     <ClInclude Include="Vendors\camera.h" />
     <ClInclude Include="Vendors\shader.h" />
     <ClInclude Include="Vendors\stb_image.h" />

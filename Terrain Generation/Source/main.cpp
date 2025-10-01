@@ -14,8 +14,8 @@
 
 #include <shader.h>
 #include <fstream>
-#include "perlin.h"
-#include <fstream>
+#include "Headers/perlin.h"
+//#include <fstream>
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -25,6 +25,9 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 unsigned int generateFrameBuffer(unsigned int& fbo, unsigned int& color_buffer, bool sampling);
 unsigned int generateScreenQuad(unsigned int& VAO);
 static float getRandom(float min, float max);
+void loadVertices(int mapSize_x, int mapSize_z, int yScale, int yShift, int seaLevel, std::vector<float>& data, std::vector<float>& vertices);
+void loadIndices(int mapSize_x, int mapSize_z, std::vector<unsigned int>& indices);
+void getHeightmap(int mapSize_x, int mapSize_z, double persistence, double scale, int octaves, std::vector<float>& data);
 
 //setings
 const unsigned int screenWidth = 1440;
@@ -48,7 +51,7 @@ bool write_to_file{ true };
 //camera setup
 Camera camera(glm::vec3(0.0f, 100.0f, 100.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), yaw, pitch);
 
-PerlinGen perlin(1000);
+Perlin perlin(1000);
 
 float quadVertices[] = {
 	// positions   // texCoords
@@ -130,107 +133,72 @@ int main()
 		}
 	}*/
 
+
 	//nice settigns: (16 octaves is nice)
 	// 1024, p0.45, s0.0035, o16, scale 512, shift 256 white mountains
+	//use dw with low yScale and persistence
 
-
-	int mapSize_x = 512, mapSize_z = 512; //only squares, rectangles cause strips
-	double persistence = 0.40, scale = 0.002; //keep scale v small
+	//parameters
+	int map_size = 1028;
+	int mapSize_x = map_size, mapSize_z = map_size; //only squares, rectangles cause strips
+	double persistence = 0.45, scale = 0.0015; //keep scale v small
 	int octaves = 16;
+
+	std::vector<float> vertices;
+	std::vector<unsigned int> indices;
+	float yScale = 512.0f, yShift = 256.0f; //range from -256 to 256
+	float seaLevel = -150.0f;
 
 	std::vector<float> data(mapSize_x * mapSize_z, 0);
 
-	//check if already present
-	std::string size = std::to_string(mapSize_x) + 'x' + std::to_string(mapSize_z);
-	std::string p = std::to_string(persistence);
-	std::string s = std::to_string(scale);
-	std::string o = std::to_string(octaves);
-	std::string name = "Media/Generated/perlin_" + size + "_p" + p + "_s" + s + "_o" + o + '_' + ".bin";
+	getHeightmap(mapSize_x, mapSize_z, persistence, scale, octaves, data);
+	
 
-	std::ifstream perlin_map(name, std::ios::binary);
-	if (perlin_map.fail() || !write_to_file) {
+	////check if already present
+	//std::string size = std::to_string(mapSize_x) + 'x' + std::to_string(mapSize_z);
+	//std::string p = std::to_string(persistence);
+	//std::string s = std::to_string(scale);
+	//std::string o = std::to_string(octaves);
+	//std::string name = "Media/Generated/perlin_" + size + "_p" + p + "_s" + s + "_o" + o + '_' + ".bin";
 
-		std::cout << "Generating data.....\n";
-		/*std::vector<unsigned char> image(mapSize_x * mapSize_z);*/
+	//std::ifstream perlin_map(name, std::ios::binary);
+	//if (perlin_map.fail() || !write_to_file) {
 
-		//write as bin file
-		std::ofstream file(name, std::ios::binary);
-		if (!file) throw std::runtime_error("Could not open the file: " + name + '\n');
-		
-		for (int i = 0; i < mapSize_x; i++) {
-			for (int j = 0; j < mapSize_z; j++) {
+	//	std::cout << "Generating data.....\n";
+	//	/*std::vector<unsigned char> image(mapSize_x * mapSize_z);*/
 
-				double x = i * scale;
-				double y = j * scale;
+	//	//write as bin file
+	//	std::ofstream file(name, std::ios::binary);
+	//	if (!file) throw std::runtime_error("Could not open the file: " + name + '\n');
+	//	
+	//	for (int i = 0; i < mapSize_x; i++) {
+	//		for (int j = 0; j < mapSize_z; j++) {
 
-				data[i * mapSize_z + j] = perlin.DW_Perlin(glm::vec2(x, y), octaves, persistence); //output is between 0,1
-			}
-		}
+	//			double x = i * scale;
+	//			double y = j * scale;
 
-		if (write_to_file) {
+	//			data[i * mapSize_z + j] = perlin.octavePerlin(glm::vec2(x, y), octaves, persistence); //output is between 0,1
+	//		}
+	//	}
 
-			//write to binary
-			file.write(reinterpret_cast<const char*>(data.data()), data.size() * sizeof(float));
-			file.close();
-			std::cout << "Created file: " + name + '\n';
-		}
-	}
-	else {
+	//	if (write_to_file) {
 
-		//use the heightmap
-		perlin_map.read(reinterpret_cast<char*>(data.data()), mapSize_x * mapSize_z * sizeof(float));
-		perlin_map.close();
-		std::cout << "loaded file: " + name + '\n';
-	}
+	//		//write to binary
+	//		file.write(reinterpret_cast<const char*>(data.data()), data.size() * sizeof(float));
+	//		file.close();
+	//		std::cout << "Created file: " + name + '\n';
+	//	}
+	//}
+	//else {
 
-	std::vector<float> vertices;
+	//	//use the heightmap
+	//	perlin_map.read(reinterpret_cast<char*>(data.data()), mapSize_x * mapSize_z * sizeof(float));
+	//	perlin_map.close();
+	//	std::cout << "loaded file: " + name + '\n';
+	//}
 
-	float yScale = 128.0f, yShift = 40; //range from -256 to 256
-	float seaLevel = -23;
-
-	for (int i = 0; i < mapSize_x; i++) {
-		for (int j = 0; j < mapSize_z; j++) {
-
-			double y = data[i * mapSize_z + j];
-			float height = y * yScale - yShift;
-			if (height < seaLevel) height = seaLevel;
-
-			vertices.push_back(-mapSize_x / 2.0f + i);
-			vertices.push_back(height);
-			vertices.push_back(-mapSize_z / 2.0f + j);
-
-			//calculate normals
-			float hL, hR, hU, hD;
-			hL = hR = hD = hU = height;
-
-			if (i != 0)
-				hL = data[(i - 1) * mapSize_z + j] * yScale - yShift; // left
-			if (i != mapSize_x - 1)
-				hR = data[(i + 1) * mapSize_z + j] * yScale - yShift; // right
-			if (j != 0)
-				hD = data[i * mapSize_z + j - 1] * yScale - yShift; // down
-			if (j != mapSize_z - 1)
-				hU = data[i * mapSize_z + j + 1] * yScale - yShift; // up
-
-			glm::vec3 normal = glm::normalize(glm::vec3((hL - hR) / 2.0f, 1.0f, (hD - hU) / 2.0f));
-			vertices.push_back(normal.x);
-			vertices.push_back(normal.y);
-			vertices.push_back(normal.z);
-		}
-	}
-
-	std::cout << "Loaded " << vertices.size() << " vertices" << std::endl;
-
-	//stbi_image_free(data);
-	std::vector<unsigned int> indices;
-	for (int i = 0; i < mapSize_z - 1; i++) {
-		for (int j = 0; j < mapSize_x; j++) {
-			indices.push_back(i * mapSize_z + j);
-			indices.push_back(j + mapSize_z * (i + 1));
-		}
-	}
-
-	std::cout << "Loaded " << indices.size() << " indices" << std::endl;
+	loadVertices(map_size, map_size, yScale, yShift, seaLevel, data, vertices);
+	loadIndices(mapSize_x, mapSize_z, indices);
 
 	const unsigned int NUM_STRIPS = mapSize_x - 1;
 	const unsigned int NUM_VERT_PER_STRIP = mapSize_z * 2;
@@ -284,7 +252,7 @@ int main()
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		objectShader.use();
 
-		glm::vec3 bgCol = glm::vec3(0.0f);
+		glm::vec3 bgCol = glm::vec3(1.0f);
 		glClearColor(bgCol.x, bgCol.y, bgCol.z, 1.0);
 		glEnable(GL_DEPTH_TEST);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -336,6 +304,100 @@ int main()
 	glfwTerminate();
 
 	return 0;
+}
+
+void getHeightmap(int mapSize_x, int mapSize_z, double persistence, double scale, int octaves, std::vector<float>& data)
+{
+	//check if already present
+	std::string size = std::to_string(mapSize_x) + 'x' + std::to_string(mapSize_z);
+	std::string p = std::to_string(persistence);
+	std::string s = std::to_string(scale);
+	std::string o = std::to_string(octaves);
+	std::string name = "Media/Generated/perlin_" + size + "_p" + p + "_s" + s + "_o" + o + '_' + ".bin";
+
+	std::ifstream perlin_map(name, std::ios::binary);
+	if (perlin_map.fail() || !write_to_file) {
+
+		std::cout << "Generating data.....\n";
+		/*std::vector<unsigned char> image(mapSize_x * mapSize_z);*/
+
+		//write as bin file
+		std::ofstream file(name, std::ios::binary);
+		if (!file) throw std::runtime_error("Could not open the file: " + name + '\n');
+
+		for (int i = 0; i < mapSize_x; i++) {
+			for (int j = 0; j < mapSize_z; j++) {
+
+				double x = i * scale;
+				double y = j * scale;
+
+				data[i * mapSize_z + j] = perlin.octavePerlin(glm::vec2(x, y), octaves, persistence); //output is between 0,1
+			}
+		}
+
+		if (write_to_file) {
+
+			//write to binary
+			file.write(reinterpret_cast<const char*>(data.data()), data.size() * sizeof(float));
+			file.close();
+			std::cout << "Created file: " + name + '\n';
+		}
+	}
+	else {
+
+		//use the heightmap
+		perlin_map.read(reinterpret_cast<char*>(data.data()), mapSize_x * mapSize_z * sizeof(float));
+		perlin_map.close();
+		std::cout << "loaded file: " + name + '\n';
+	}
+}
+
+void loadVertices(int mapSize_x, int mapSize_z,int yScale, int yShift, int seaLevel, std::vector<float>& data, std::vector<float>& vertices) {
+
+	for (int i = 0; i < mapSize_x; i++) {
+		for (int j = 0; j < mapSize_z; j++) {
+
+			double y = data[i * mapSize_z + j];
+			float height = y * yScale - yShift;
+			if (height < seaLevel) height = seaLevel;
+
+			vertices.push_back(-mapSize_x / 2.0f + i);
+			vertices.push_back(height);
+			vertices.push_back(-mapSize_z / 2.0f + j);
+
+			//calculate normals
+			float hL, hR, hU, hD;
+			hL = hR = hD = hU = height;
+
+			if (i != 0)
+				hL = data[(i - 1) * mapSize_z + j] * yScale - yShift; // left
+			if (i != mapSize_x - 1)
+				hR = data[(i + 1) * mapSize_z + j] * yScale - yShift; // right
+			if (j != 0)
+				hD = data[i * mapSize_z + j - 1] * yScale - yShift; // down
+			if (j != mapSize_z - 1)
+				hU = data[i * mapSize_z + j + 1] * yScale - yShift; // up
+
+			glm::vec3 normal = glm::normalize(glm::vec3((hL - hR) / 2.0f, 1.0f, (hD - hU) / 2.0f));
+			vertices.push_back(normal.x);
+			vertices.push_back(normal.y);
+			vertices.push_back(normal.z);
+		}
+	}
+
+	std::cout << "Loaded " << vertices.size() << " vertices" << std::endl;
+}
+
+void loadIndices(int mapSize_x, int mapSize_z, std::vector<unsigned int>& indices) {
+
+	for (int i = 0; i < mapSize_z - 1; i++) {
+		for (int j = 0; j < mapSize_x; j++) {
+			indices.push_back(i * mapSize_z + j);
+			indices.push_back(j + mapSize_z * (i + 1));
+		}
+	}
+
+	std::cout << "Loaded " << indices.size() << " indices" << std::endl;
 }
 
 unsigned int generateScreenQuad(unsigned int& VAO) {

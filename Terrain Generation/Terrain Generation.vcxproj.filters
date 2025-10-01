@@ -21,10 +21,10 @@
     <ClCompile Include="Source\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\glad.c">
+    <ClCompile Include="Vendors\glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\app.cpp">
+    <ClCompile Include="Source\Headers\perlin.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -55,7 +55,7 @@
     <ClInclude Include="Vendors\textureLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\perlin.h">
+    <ClInclude Include="Source\Headers\perlin.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\framebuffer.h">

@@ -52,7 +52,7 @@ void main()
 	vec4 water = vec4(0.0,0.53,0.74,1.0f);
 	vec4 grass = vec4(0.13,0.55,0.13,1.0f);
 
-	float snow_alt = 0.6;
+	float snow_alt = 0.8;
 	float rock_alt = 0.4;
 	float soil_alt = 0.4;
 	float grass_alt = 0.0;
@@ -68,13 +68,12 @@ void main()
 		col = lerp(grass, rock, (frac - grass_alt) / (rock_alt - grass_alt) );
 	else 
 		col = water;
-		
 
 	//determine by slope
-	float slope_threshold = 0.55;
+	float slope_threshold = 0.75;
 	if (frac != 0) {
 		if (param <= slope_threshold)
-			col = lerp(rock, col, param);
+			col = lerp(rock, col, 1 - param);
 		else
 			col += 0.1 * lerp(rock, col, (param - slope_threshold) / (1 - slope_threshold));
 	}
