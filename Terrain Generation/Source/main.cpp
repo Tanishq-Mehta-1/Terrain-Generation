@@ -27,7 +27,8 @@ unsigned int generateScreenQuad(unsigned int& VAO);
 static float getRandom(float min, float max);
 void loadVertices(int mapSize_x, int mapSize_z, int yScale, int yShift, int seaLevel, std::vector<float>& data, std::vector<float>& vertices);
 void loadIndices(int mapSize_x, int mapSize_z, std::vector<unsigned int>& indices);
-void getHeightmap(int mapSize_x, int mapSize_z, double persistence, double scale, int octaves, std::vector<float>& data);
+std::pair<int, int> loadData(int mapSize_x, int mapSize_z, double persistence, double scale, int octaves, std::vector<float>& data);
+std::pair<int, int> loadData(std::string texture_name, std::vector<float>& data);
 
 //setings
 const unsigned int screenWidth = 1440;
@@ -46,7 +47,8 @@ float yaw{ -90.0f };
 
 bool firstMouse{ true };
 bool toggleWireframe{ false };
-bool write_to_file{ true };
+constexpr bool write_to_file{ true };
+constexpr bool load_from_image{ false };
 
 //camera setup
 Camera camera(glm::vec3(0.0f, 100.0f, 100.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), yaw, pitch);
@@ -113,95 +115,35 @@ int main()
 	unsigned int screenVAO;
 	generateScreenQuad(screenVAO);
 
-	//loading heightMap from image
-	/*int width, height, nChannels;
-	stbi_set_flip_vertically_on_load(true);
-	unsigned char* data = stbi_load("textures/iceland_heightmap.png", &width, &height, &nChannels, 0);
-
-	std::vector<float> vertices;
-	float yScale = 64.0f / 256.0f, yShift = 16.0f;
-
-	for (int i = 0; i < height; i++) {
-		for (int j = 0; j < width; j++) {
-
-			unsigned char* texel = data + (j + width * i) * nChannels;
-			unsigned char y = texel[0];
-
-			vertices.push_back(-height / 2.0f + i);
-			vertices.push_back((int)y * yScale - yShift);
-			vertices.push_back(-width / 2.0f + j);
-		}
-	}*/
-
-
 	//nice settigns: (16 octaves is nice)
 	// 1024, p0.45, s0.0035, o16, scale 512, shift 256 white mountains
 	//use dw with low yScale and persistence
 
-	//parameters
-	int map_size = 1028;
-	int mapSize_x = map_size, mapSize_z = map_size; //only squares, rectangles cause strips
-	double persistence = 0.45, scale = 0.0015; //keep scale v small
-	int octaves = 16;
-
 	std::vector<float> vertices;
 	std::vector<unsigned int> indices;
+	std::vector<float> data;
+	std::pair<int, int> map_dimensions;
 	float yScale = 512.0f, yShift = 256.0f; //range from -256 to 256
-	float seaLevel = -150.0f;
+	float seaLevel = -yShift;
 
-	std::vector<float> data(mapSize_x * mapSize_z, 0);
 
-	getHeightmap(mapSize_x, mapSize_z, persistence, scale, octaves, data);
-	
+	if (load_from_image)
+		map_dimensions = loadData("textures\\iceland_heightmap.png", data);
+	else
+	{
+		int map_size = 1028;
+		int mapSize_x = map_size, mapSize_z = map_size; //only squares, rectangles cause strips
+		double persistence = 0.45, scale = 0.0015; //keep scale v small
+		int octaves = 8;
 
-	////check if already present
-	//std::string size = std::to_string(mapSize_x) + 'x' + std::to_string(mapSize_z);
-	//std::string p = std::to_string(persistence);
-	//std::string s = std::to_string(scale);
-	//std::string o = std::to_string(octaves);
-	//std::string name = "Media/Generated/perlin_" + size + "_p" + p + "_s" + s + "_o" + o + '_' + ".bin";
+		map_dimensions = loadData(mapSize_x, mapSize_z, persistence, scale, octaves, data);
+	}
 
-	//std::ifstream perlin_map(name, std::ios::binary);
-	//if (perlin_map.fail() || !write_to_file) {
+	loadVertices(map_dimensions.first, map_dimensions.second, yScale, yShift, seaLevel, data, vertices);
+	loadIndices(map_dimensions.first, map_dimensions.second, indices);
 
-	//	std::cout << "Generating data.....\n";
-	//	/*std::vector<unsigned char> image(mapSize_x * mapSize_z);*/
-
-	//	//write as bin file
-	//	std::ofstream file(name, std::ios::binary);
-	//	if (!file) throw std::runtime_error("Could not open the file: " + name + '\n');
-	//	
-	//	for (int i = 0; i < mapSize_x; i++) {
-	//		for (int j = 0; j < mapSize_z; j++) {
-
-	//			double x = i * scale;
-	//			double y = j * scale;
-
-	//			data[i * mapSize_z + j] = perlin.octavePerlin(glm::vec2(x, y), octaves, persistence); //output is between 0,1
-	//		}
-	//	}
-
-	//	if (write_to_file) {
-
-	//		//write to binary
-	//		file.write(reinterpret_cast<const char*>(data.data()), data.size() * sizeof(float));
-	//		file.close();
-	//		std::cout << "Created file: " + name + '\n';
-	//	}
-	//}
-	//else {
-
-	//	//use the heightmap
-	//	perlin_map.read(reinterpret_cast<char*>(data.data()), mapSize_x * mapSize_z * sizeof(float));
-	//	perlin_map.close();
-	//	std::cout << "loaded file: " + name + '\n';
-	//}
-
-	loadVertices(map_size, map_size, yScale, yShift, seaLevel, data, vertices);
-	loadIndices(mapSize_x, mapSize_z, indices);
-
-	const unsigned int NUM_STRIPS = mapSize_x - 1;
-	const unsigned int NUM_VERT_PER_STRIP = mapSize_z * 2;
+	const unsigned int NUM_STRIPS = map_dimensions.first - 1;
+	const unsigned int NUM_VERT_PER_STRIP = map_dimensions.second * 2;
 
 	// register VAO
 	GLuint terrainVAO, terrainVBO, terrainEBO;
@@ -212,7 +154,7 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, terrainVBO);
 	glBufferData(GL_ARRAY_BUFFER,
 		vertices.size() * sizeof(float),       // size of vertices buffer
-		&vertices[0],                          // pointer to first element
+		vertices.data(),                          // pointer to first element
 		GL_STATIC_DRAW);
 
 	// position attribute
@@ -306,8 +248,46 @@ int main()
 	return 0;
 }
 
-void getHeightmap(int mapSize_x, int mapSize_z, double persistence, double scale, int octaves, std::vector<float>& data)
+std::pair<int,int> loadData(std::string texture_name, std::vector<float>& data)
 {
+	std::cout << "Loading " << texture_name << '\n';
+
+	int width, height, nChannels;
+	stbi_set_flip_vertically_on_load(true);
+	unsigned char* temp = stbi_load(texture_name.c_str(), &width, &height, &nChannels, 0);
+	if (!temp) throw std::runtime_error("Texture not loaded!\n");
+
+	//std::vector<float>data(height * width, 0);
+	data = std::vector<float>(width * height, 0);
+
+	for (int i = 0; i < width; i++) {
+		for (int j = 0; j < height; j++) {
+
+			unsigned char* texel = temp + (j * width + i) * nChannels;
+			data[j * width + i] = static_cast<float>(*(texel)) / 255.0f;
+		}
+	}
+
+	std::vector<float> transposed(height * width, 0);
+
+	for (int i = 0; i < width; i++) {
+		for (int j = 0; j < height; j++) {
+
+			int ind_old = j * width + i;
+			int ind_new = i * height + j;
+
+			transposed[ind_new] = data[ind_old];
+		}
+	}
+
+	data = transposed;
+	return {width, height};
+}
+
+std::pair<int,int> loadData(int mapSize_x, int mapSize_z, double persistence, double scale, int octaves, std::vector<float>& data)
+{
+	data = std::vector<float>(mapSize_x * mapSize_z, 0);
+
 	//check if already present
 	std::string size = std::to_string(mapSize_x) + 'x' + std::to_string(mapSize_z);
 	std::string p = std::to_string(persistence);
@@ -319,7 +299,6 @@ void getHeightmap(int mapSize_x, int mapSize_z, double persistence, double scale
 	if (perlin_map.fail() || !write_to_file) {
 
 		std::cout << "Generating data.....\n";
-		/*std::vector<unsigned char> image(mapSize_x * mapSize_z);*/
 
 		//write as bin file
 		std::ofstream file(name, std::ios::binary);
@@ -350,9 +329,11 @@ void getHeightmap(int mapSize_x, int mapSize_z, double persistence, double scale
 		perlin_map.close();
 		std::cout << "loaded file: " + name + '\n';
 	}
+
+	return {mapSize_x, mapSize_z};
 }
 
-void loadVertices(int mapSize_x, int mapSize_z,int yScale, int yShift, int seaLevel, std::vector<float>& data, std::vector<float>& vertices) {
+void loadVertices(int mapSize_x, int mapSize_z, int yScale, int yShift, int seaLevel, std::vector<float>& data, std::vector<float>& vertices) {
 
 	for (int i = 0; i < mapSize_x; i++) {
 		for (int j = 0; j < mapSize_z; j++) {
