@@ -1,22 +1,14 @@
-﻿#define _CRT_SECURE_NO_WARNINGS
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
-#include <cstdio> //for stbi image write
+﻿#include <stb_image_write.h>
+#include <stb_image.h>
+
+#include "TerrainGenerator/TerrainGenerator.h"
+#include "TerrainMesh.h"
+#include "TerrainRender/TerrainRenderer.h"
 
 #include <camera.h>
-#include <vector>
-
 #include <GLFW/glfw3.h>
-
-#define STB_IMAGE_IMPLEMENTATION    
-#include <stb_image.h>
 #include <glm/gtc/type_ptr.hpp>
-
 #include <shader.h>
-#include <fstream>
-#include "Headers/perlin.h"
-//#include <fstream>
-
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
@@ -25,10 +17,10 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 unsigned int generateFrameBuffer(unsigned int& fbo, unsigned int& color_buffer, bool sampling);
 unsigned int generateScreenQuad(unsigned int& VAO);
 static float getRandom(float min, float max);
+void toggle_mode(GLFWwindow* window, int key, bool& toSwitch);
 void loadVertices(int mapSize_x, int mapSize_z, int yScale, int yShift, int seaLevel, std::vector<float>& data, std::vector<float>& vertices);
 void loadIndices(int mapSize_x, int mapSize_z, std::vector<unsigned int>& indices);
-std::pair<int, int> loadData(int mapSize_x, int mapSize_z, double persistence, double scale, int octaves, std::vector<float>& data);
-std::pair<int, int> loadData(std::string texture_name, std::vector<float>& data);
+int handleToggle(bool wireframe, bool fog, bool atmos);
 
 //setings
 const unsigned int screenWidth = 1440;
@@ -47,6 +39,9 @@ float yaw{ -90.0f };
 
 bool firstMouse{ true };
 bool toggleWireframe{ false };
+bool toggleAtmosphere{ false };
+bool toggleFog{ false };
+
 constexpr bool write_to_file{ true };
 constexpr bool load_from_image{ false };
 
@@ -121,64 +116,71 @@ int main()
 
 	std::vector<float> vertices;
 	std::vector<unsigned int> indices;
-	std::vector<float> data;
-	std::pair<int, int> map_dimensions;
-	float yScale = 512.0f, yShift = 256.0f; //range from -256 to 256
-	float seaLevel = -yShift;
 
+	float yScale = 512.0f, yShift = 256.0f; //range from -256 to 256
+	float seaLevel = -150.0f;
+
+	TerrainMesh tMesh(yScale, yShift, seaLevel);
+	TerrainGenerator tGen(1000);
 
 	if (load_from_image)
-		map_dimensions = loadData("textures\\iceland_heightmap.png", data);
+		tMesh.map_dimensions = tGen.loadHeightmap("textures\iceland_heightmap.png", tMesh.data);
 	else
 	{
-		int map_size = 1028;
+		int map_size = 1024;
 		int mapSize_x = map_size, mapSize_z = map_size; //only squares, rectangles cause strips
-		double persistence = 0.45, scale = 0.0015; //keep scale v small
-		int octaves = 8;
+		double persistence = 0.335, scale = 0.0015; //keep scale v small
+		int octaves = 16;
 
-		map_dimensions = loadData(mapSize_x, mapSize_z, persistence, scale, octaves, data);
+		tMesh.map_dimensions = tGen.generateHeightmap(mapSize_x, mapSize_z, persistence, scale, octaves, FBM, false, tMesh.data);
 	}
 
-	loadVertices(map_dimensions.first, map_dimensions.second, yScale, yShift, seaLevel, data, vertices);
-	loadIndices(map_dimensions.first, map_dimensions.second, indices);
+	//initialise Terrain Renderer after data has been generated
+	TerrainRenderer tRen(objectShader, tMesh);
 
-	const unsigned int NUM_STRIPS = map_dimensions.first - 1;
-	const unsigned int NUM_VERT_PER_STRIP = map_dimensions.second * 2;
+	//std::pair<int, int> map_dimensions = tMesh.map_dimensions;
+	//std::vector<float> data = tMesh.data;
 
-	// register VAO
-	GLuint terrainVAO, terrainVBO, terrainEBO;
-	glGenVertexArrays(1, &terrainVAO);
-	glBindVertexArray(terrainVAO);
+	//loadVertices(map_dimensions.first, map_dimensions.second, yScale, yShift, seaLevel, data, vertices);
+	//loadIndices(map_dimensions.first, map_dimensions.second, indices);
 
-	glGenBuffers(1, &terrainVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, terrainVBO);
-	glBufferData(GL_ARRAY_BUFFER,
-		vertices.size() * sizeof(float),       // size of vertices buffer
-		vertices.data(),                          // pointer to first element
-		GL_STATIC_DRAW);
+	//const unsigned int NUM_STRIPS = map_dimensions.first - 1;
+	//const unsigned int NUM_VERT_PER_STRIP = map_dimensions.second * 2;
 
-	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	// normal attribute
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
+	//// register VAO
+	//GLuint terrainVAO, terrainVBO, terrainEBO;
+	//glGenVertexArrays(1, &terrainVAO);
+	//glBindVertexArray(terrainVAO);
 
-	glGenBuffers(1, &terrainEBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, terrainEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-		indices.size() * sizeof(unsigned int), // size of indices buffer
-		&indices[0],                           // pointer to first element
-		GL_STATIC_DRAW);
+	//glGenBuffers(1, &terrainVBO);
+	//glBindBuffer(GL_ARRAY_BUFFER, terrainVBO);
+	//glBufferData(GL_ARRAY_BUFFER,
+	//	vertices.size() * sizeof(float),       // size of vertices buffer
+	//	vertices.data(),                          // pointer to first element
+	//	GL_STATIC_DRAW);
 
-	//setting constant uniforms
-	objectShader.use();
+	//// position attribute
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	//glEnableVertexAttribArray(0);
+	//// normal attribute
+	//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	//glEnableVertexAttribArray(1);
+
+	//glGenBuffers(1, &terrainEBO);
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, terrainEBO);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+	//	indices.size() * sizeof(unsigned int), // size of indices buffer
+	//	&indices[0],                           // pointer to first element
+	//	GL_STATIC_DRAW);
+
+	////setting constant uniforms
+	//objectShader.use();
 	glm::vec3 sun_color = glm::vec3(0.98, 0.85, 0.65);
 	glm::vec3 sun_dir = glm::vec3(-0.2, -1.0f, -0.3f);
-	objectShader.setVec3("dir.specular", 1.0f * sun_color);
-	objectShader.setVec3("dir.diffuse", 0.6f * sun_color);
-	objectShader.setVec3("dir.ambient", 0.3f * sun_color);
-	objectShader.setVec3("dir.direction", sun_dir);
+	//objectShader.setVec3("dir.specular", 1.0f * sun_color);
+	//objectShader.setVec3("dir.diffuse", 0.6f * sun_color);
+	//objectShader.setVec3("dir.ambient", 0.3f * sun_color);
+	//objectShader.setVec3("dir.direction", sun_dir);
 
 	//render loop
 	while (!glfwWindowShouldClose(window))
@@ -199,31 +201,33 @@ int main()
 		glEnable(GL_DEPTH_TEST);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		objectShader.use();
+		tRen.RenderTerrain(tMesh, sun_color, sun_dir, camera, screenWidth, screenHeight, handleToggle(toggleAtmosphere, toggleFog, toggleWireframe));
 
-		// view/projection transformations
-		glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float)screenWidth / (float)screenHeight, 0.1f, 10000.0f);
-		glm::mat4 view = camera.getViewMatrix();
-		objectShader.setMat4("projection", projection);
-		objectShader.setMat4("view", view);
-		objectShader.setFloat("minHeight", seaLevel);
-		objectShader.setFloat("maxHeight", yScale - yShift);
+		//// view/projection transformations
+		//glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float)screenWidth / (float)screenHeight, 0.1f, 10000.0f);
+		//glm::mat4 view = camera.getViewMatrix();
+		//objectShader.setMat4("projection", projection);
+		//objectShader.setMat4("view", view);
+		//objectShader.setFloat("minHeight", seaLevel);
+		//objectShader.setFloat("maxHeight", yScale - yShift);
+		//objectShader.setBool("toggleFog", toggleFog);
+		//objectShader.setBool("toggleAtmosphere", toggleAtmosphere);
 
-		// world transformation
-		glm::mat4 model = glm::mat4(1.0f);
-		objectShader.setMat4("model", model);
+		//// world transformation
+		//glm::mat4 model = glm::mat4(1.0f);
+		//objectShader.setMat4("model", model);
 
-		//camera pos uniform
-		objectShader.setVec3("viewPos", camera.Position);
+		////camera pos uniform
+		//objectShader.setVec3("viewPos", camera.Position);
 
-		//draw calls
-		glBindVertexArray(terrainVAO);
-		for (unsigned int strip = 0; strip < NUM_STRIPS; strip++) {
-			if (toggleWireframe)
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			glDrawElements(GL_TRIANGLE_STRIP, NUM_VERT_PER_STRIP, GL_UNSIGNED_INT, (void*)(sizeof(unsigned int) * NUM_VERT_PER_STRIP * strip));
-		}
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		////draw calls
+		//glBindVertexArray(terrainVAO);
+		//for (unsigned int strip = 0; strip < NUM_STRIPS; strip++) {
+		//	if (toggleWireframe)
+		//		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		//	glDrawElements(GL_TRIANGLE_STRIP, NUM_VERT_PER_STRIP, GL_UNSIGNED_INT, (void*)(sizeof(unsigned int) * NUM_VERT_PER_STRIP * strip));
+		//}
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		//second pass
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -248,137 +252,14 @@ int main()
 	return 0;
 }
 
-std::pair<int,int> loadData(std::string texture_name, std::vector<float>& data)
-{
-	std::cout << "Loading " << texture_name << '\n';
+int handleToggle(bool wireframe, bool fog, bool atmos) {
+	std::string res;
 
-	int width, height, nChannels;
-	stbi_set_flip_vertically_on_load(true);
-	unsigned char* temp = stbi_load(texture_name.c_str(), &width, &height, &nChannels, 0);
-	if (!temp) throw std::runtime_error("Texture not loaded!\n");
+	res.push_back(wireframe ? '1' : '0');
+	res.push_back(fog ? '1' : '0');
+	res.push_back(atmos ? '1' : '0');
 
-	//std::vector<float>data(height * width, 0);
-	data = std::vector<float>(width * height, 0);
-
-	for (int i = 0; i < width; i++) {
-		for (int j = 0; j < height; j++) {
-
-			unsigned char* texel = temp + (j * width + i) * nChannels;
-			data[j * width + i] = static_cast<float>(*(texel)) / 255.0f;
-		}
-	}
-
-	std::vector<float> transposed(height * width, 0);
-
-	for (int i = 0; i < width; i++) {
-		for (int j = 0; j < height; j++) {
-
-			int ind_old = j * width + i;
-			int ind_new = i * height + j;
-
-			transposed[ind_new] = data[ind_old];
-		}
-	}
-
-	data = transposed;
-	return {width, height};
-}
-
-std::pair<int,int> loadData(int mapSize_x, int mapSize_z, double persistence, double scale, int octaves, std::vector<float>& data)
-{
-	data = std::vector<float>(mapSize_x * mapSize_z, 0);
-
-	//check if already present
-	std::string size = std::to_string(mapSize_x) + 'x' + std::to_string(mapSize_z);
-	std::string p = std::to_string(persistence);
-	std::string s = std::to_string(scale);
-	std::string o = std::to_string(octaves);
-	std::string name = "Media/Generated/perlin_" + size + "_p" + p + "_s" + s + "_o" + o + '_' + ".bin";
-
-	std::ifstream perlin_map(name, std::ios::binary);
-	if (perlin_map.fail() || !write_to_file) {
-
-		std::cout << "Generating data.....\n";
-
-		//write as bin file
-		std::ofstream file(name, std::ios::binary);
-		if (!file) throw std::runtime_error("Could not open the file: " + name + '\n');
-
-		for (int i = 0; i < mapSize_x; i++) {
-			for (int j = 0; j < mapSize_z; j++) {
-
-				double x = i * scale;
-				double y = j * scale;
-
-				data[i * mapSize_z + j] = perlin.octavePerlin(glm::vec2(x, y), octaves, persistence); //output is between 0,1
-			}
-		}
-
-		if (write_to_file) {
-
-			//write to binary
-			file.write(reinterpret_cast<const char*>(data.data()), data.size() * sizeof(float));
-			file.close();
-			std::cout << "Created file: " + name + '\n';
-		}
-	}
-	else {
-
-		//use the heightmap
-		perlin_map.read(reinterpret_cast<char*>(data.data()), mapSize_x * mapSize_z * sizeof(float));
-		perlin_map.close();
-		std::cout << "loaded file: " + name + '\n';
-	}
-
-	return {mapSize_x, mapSize_z};
-}
-
-void loadVertices(int mapSize_x, int mapSize_z, int yScale, int yShift, int seaLevel, std::vector<float>& data, std::vector<float>& vertices) {
-
-	for (int i = 0; i < mapSize_x; i++) {
-		for (int j = 0; j < mapSize_z; j++) {
-
-			double y = data[i * mapSize_z + j];
-			float height = y * yScale - yShift;
-			if (height < seaLevel) height = seaLevel;
-
-			vertices.push_back(-mapSize_x / 2.0f + i);
-			vertices.push_back(height);
-			vertices.push_back(-mapSize_z / 2.0f + j);
-
-			//calculate normals
-			float hL, hR, hU, hD;
-			hL = hR = hD = hU = height;
-
-			if (i != 0)
-				hL = data[(i - 1) * mapSize_z + j] * yScale - yShift; // left
-			if (i != mapSize_x - 1)
-				hR = data[(i + 1) * mapSize_z + j] * yScale - yShift; // right
-			if (j != 0)
-				hD = data[i * mapSize_z + j - 1] * yScale - yShift; // down
-			if (j != mapSize_z - 1)
-				hU = data[i * mapSize_z + j + 1] * yScale - yShift; // up
-
-			glm::vec3 normal = glm::normalize(glm::vec3((hL - hR) / 2.0f, 1.0f, (hD - hU) / 2.0f));
-			vertices.push_back(normal.x);
-			vertices.push_back(normal.y);
-			vertices.push_back(normal.z);
-		}
-	}
-
-	std::cout << "Loaded " << vertices.size() << " vertices" << std::endl;
-}
-
-void loadIndices(int mapSize_x, int mapSize_z, std::vector<unsigned int>& indices) {
-
-	for (int i = 0; i < mapSize_z - 1; i++) {
-		for (int j = 0; j < mapSize_x; j++) {
-			indices.push_back(i * mapSize_z + j);
-			indices.push_back(j + mapSize_z * (i + 1));
-		}
-	}
-
-	std::cout << "Loaded " << indices.size() << " indices" << std::endl;
+	return std::stoi(res, nullptr, 2);
 }
 
 unsigned int generateScreenQuad(unsigned int& VAO) {
@@ -471,19 +352,13 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 void processInput(GLFWwindow* window)
 {
-	static bool tWasDown = false;
+	//static bool tWasDown = false;
 
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
-	if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
-	{
-		if (!tWasDown) {
-			tWasDown = true;
-			toggleWireframe = !toggleWireframe;
-		}
-	}
-	else tWasDown = false;
-
+	toggle_mode(window, GLFW_KEY_T, toggleWireframe);
+	toggle_mode(window, GLFW_KEY_F, toggleFog);
+	toggle_mode(window, GLFW_KEY_G, toggleAtmosphere);
 
 	//camera controls
 	const float cameraSpeed = 5.0f * deltaTime;
@@ -500,6 +375,22 @@ void processInput(GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 		//cameraPos -= cameraSpeed * glm::normalize(glm::cross(cameraFront, cameraUp));
 		camera.processKeyboard(LEFT, cameraSpeed);
+}
+
+void toggle_mode(GLFWwindow* window, int key, bool& toSwitch) {
+
+	//works only for alphabet keys
+	static std::vector<bool> keys(26, false);
+	int ind = key - GLFW_KEY_A;
+
+	if (glfwGetKey(window, key) == GLFW_PRESS)
+	{
+		if (!keys[ind]) {
+			keys[ind] = true;
+			toSwitch = !toSwitch;
+		}
+	}
+	else keys[ind] = false;
 }
 
 static float getRandom(float min, float max)

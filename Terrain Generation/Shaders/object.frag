@@ -6,6 +6,8 @@ in vec3 FragPos;
 
 uniform float minHeight, maxHeight;
 uniform vec3 viewPos;
+uniform bool toggleFog;
+uniform bool toggleAtmosphere;
 
 float far = maxHeight - minHeight;
 float near = 0.1f;
@@ -86,9 +88,16 @@ void main()
     vec4 result = vec4(lighting, 1.0);
 	
 	//fog
-//	float depth = linearizeDepth(gl_FragCoord.z) / far;
-//	vec4 depthVec4 = vec4(vec3(pow(depth, 0.9)), 1.0);
-//	result = result * (1 - depthVec4) + depthVec4;
+	float depth = linearizeDepth(gl_FragCoord.z) / far;
+
+	if(toggleAtmosphere){
+		float lambda = pow(2.71828, -2.0 * depth);
+		result = lambda * result + (1 - lambda) * vec4(0.50, 0.50, 0.50, 1.0f);
+	}
+	if (toggleFog){
+		vec4 depthVec4 = vec4(vec3(pow(depth, 0.9)), 1.0);
+		result = result * (1 - depthVec4) + depthVec4;
+	}
 
 	//gamma correction
 	result = pow(result, vec4(1.0f/2.2f));
@@ -106,11 +115,11 @@ vec3 calculateDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 baseColor
     // Diffuse
     float diff = max(dot(normal, lightDir), 0.0);
     vec3 diffuse = light.diffuse * diff * baseColor;
-//    
-//    // Specular (Blinn-Phong uses halfway vector)
-//    vec3 halfwayDir = normalize(lightDir + viewDir);
-//    float spec = pow(max(dot(normal, halfwayDir), 0.0), 256.0); 
-//    vec3 specular = light.specular * spec;
+    
+    // Specular (Blinn-Phong uses halfway vector)
+    vec3 halfwayDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), 256.0); 
+    vec3 specular = light.specular * spec;
     
     return ambient + diffuse;
 }

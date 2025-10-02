@@ -128,8 +128,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Headers\framebuffer.cpp" />
+    <ClCompile Include="Source\TerrainGenerator\TerrainGenerator.cpp" />
+    <ClCompile Include="Source\TerrainRender\TerrainRenderer.cpp" />
     <ClCompile Include="Vendors\glad.c" />
-    <ClCompile Include="Source\Headers\perlin.cpp" />
+    <ClCompile Include="Source\TerrainGenerator\perlin.cpp" />
     <ClCompile Include="Source\main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -139,8 +142,11 @@
     <None Include="Shaders\post_process.vert" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source\framebuffer.h" />
-    <ClInclude Include="Source\Headers\perlin.h" />
+    <ClInclude Include="Source\Headers\framebuffer.h" />
+    <ClInclude Include="Source\TerrainGenerator\perlin.h" />
+    <ClInclude Include="Source\TerrainGenerator\TerrainGenerator.h" />
+    <ClInclude Include="Source\TerrainMesh.h" />
+    <ClInclude Include="Source\TerrainRender\TerrainRenderer.h" />
     <ClInclude Include="Vendors\camera.h" />
     <ClInclude Include="Vendors\shader.h" />
     <ClInclude Include="Vendors\stb_image.h" />

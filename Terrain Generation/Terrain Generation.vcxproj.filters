@@ -24,7 +24,16 @@
     <ClCompile Include="Vendors\glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Headers\perlin.cpp">
+    <ClCompile Include="Source\TerrainGenerator\perlin.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Headers\framebuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\TerrainGenerator\TerrainGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\TerrainRender\TerrainRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -55,13 +64,22 @@
     <ClInclude Include="Vendors\textureLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Headers\perlin.h">
+    <ClInclude Include="Source\TerrainGenerator\perlin.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\framebuffer.h">
+    <ClInclude Include="Source\Headers\framebuffer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Vendors\stb_image_write.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\TerrainGenerator\TerrainGenerator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\TerrainRender\TerrainRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\TerrainMesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
