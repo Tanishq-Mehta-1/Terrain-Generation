@@ -24,6 +24,7 @@ public:
 	std::pair<int,int> loadHeightmap(std::string texture_name, std::vector<float>& data);
 
 private:
+	void generateData(int start, int end, double scale, int octaves, double persistence, int mapSize_z, GenerationFlags flag, std::vector<float>& data);
 	Perlin perlin;
 };
 

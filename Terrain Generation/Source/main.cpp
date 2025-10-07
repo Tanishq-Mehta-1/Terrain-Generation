@@ -10,6 +10,9 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <shader.h>
 
+//for testing
+#include <chrono>
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -132,55 +135,20 @@ int main()
 		double persistence = 0.335, scale = 0.0015; //keep scale v small
 		int octaves = 16;
 
+		auto start = std::chrono::high_resolution_clock::now();
 		tMesh.map_dimensions = tGen.generateHeightmap(mapSize_x, mapSize_z, persistence, scale, octaves, FBM, false, tMesh.data);
+		auto end = std::chrono::high_resolution_clock::now();
+
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+		std::cout << "Execution time: "  << duration.count() << '\n';
 	}
 
 	//initialise Terrain Renderer after data has been generated
 	TerrainRenderer tRen(objectShader, tMesh);
 
-	//std::pair<int, int> map_dimensions = tMesh.map_dimensions;
-	//std::vector<float> data = tMesh.data;
-
-	//loadVertices(map_dimensions.first, map_dimensions.second, yScale, yShift, seaLevel, data, vertices);
-	//loadIndices(map_dimensions.first, map_dimensions.second, indices);
-
-	//const unsigned int NUM_STRIPS = map_dimensions.first - 1;
-	//const unsigned int NUM_VERT_PER_STRIP = map_dimensions.second * 2;
-
-	//// register VAO
-	//GLuint terrainVAO, terrainVBO, terrainEBO;
-	//glGenVertexArrays(1, &terrainVAO);
-	//glBindVertexArray(terrainVAO);
-
-	//glGenBuffers(1, &terrainVBO);
-	//glBindBuffer(GL_ARRAY_BUFFER, terrainVBO);
-	//glBufferData(GL_ARRAY_BUFFER,
-	//	vertices.size() * sizeof(float),       // size of vertices buffer
-	//	vertices.data(),                          // pointer to first element
-	//	GL_STATIC_DRAW);
-
-	//// position attribute
-	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-	//glEnableVertexAttribArray(0);
-	//// normal attribute
-	//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	//glEnableVertexAttribArray(1);
-
-	//glGenBuffers(1, &terrainEBO);
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, terrainEBO);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-	//	indices.size() * sizeof(unsigned int), // size of indices buffer
-	//	&indices[0],                           // pointer to first element
-	//	GL_STATIC_DRAW);
-
 	////setting constant uniforms
-	//objectShader.use();
 	glm::vec3 sun_color = glm::vec3(0.98, 0.85, 0.65);
 	glm::vec3 sun_dir = glm::vec3(-0.2, -1.0f, -0.3f);
-	//objectShader.setVec3("dir.specular", 1.0f * sun_color);
-	//objectShader.setVec3("dir.diffuse", 0.6f * sun_color);
-	//objectShader.setVec3("dir.ambient", 0.3f * sun_color);
-	//objectShader.setVec3("dir.direction", sun_dir);
 
 	//render loop
 	while (!glfwWindowShouldClose(window))
@@ -202,32 +170,6 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		tRen.RenderTerrain(tMesh, sun_color, sun_dir, camera, screenWidth, screenHeight, handleToggle(toggleAtmosphere, toggleFog, toggleWireframe));
-
-		//// view/projection transformations
-		//glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float)screenWidth / (float)screenHeight, 0.1f, 10000.0f);
-		//glm::mat4 view = camera.getViewMatrix();
-		//objectShader.setMat4("projection", projection);
-		//objectShader.setMat4("view", view);
-		//objectShader.setFloat("minHeight", seaLevel);
-		//objectShader.setFloat("maxHeight", yScale - yShift);
-		//objectShader.setBool("toggleFog", toggleFog);
-		//objectShader.setBool("toggleAtmosphere", toggleAtmosphere);
-
-		//// world transformation
-		//glm::mat4 model = glm::mat4(1.0f);
-		//objectShader.setMat4("model", model);
-
-		////camera pos uniform
-		//objectShader.setVec3("viewPos", camera.Position);
-
-		////draw calls
-		//glBindVertexArray(terrainVAO);
-		//for (unsigned int strip = 0; strip < NUM_STRIPS; strip++) {
-		//	if (toggleWireframe)
-		//		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		//	glDrawElements(GL_TRIANGLE_STRIP, NUM_VERT_PER_STRIP, GL_UNSIGNED_INT, (void*)(sizeof(unsigned int) * NUM_VERT_PER_STRIP * strip));
-		//}
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		//second pass
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);

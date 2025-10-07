@@ -8,13 +8,15 @@
 
 #include "TerrainGenerator.h"
 
+#include <thread>
+
 TerrainGenerator::TerrainGenerator(int period) {
 	perlin.repeat = period;
 
 };
 
 //with given parameters, give options for fbm, domain warp etc
-std::pair<int,int> TerrainGenerator::generateHeightmap(int mapSize_x, int mapSize_z, double persistence, double scale, int octaves, GenerationFlags flag, bool write_to_file, std::vector<float>& data)
+std::pair<int, int> TerrainGenerator::generateHeightmap(int mapSize_x, int mapSize_z, double persistence, double scale, int octaves, GenerationFlags flag, bool write_to_file, std::vector<float>& data)
 {
 	data = std::vector<float>(mapSize_x * mapSize_z, 0);
 
@@ -31,20 +33,37 @@ std::pair<int,int> TerrainGenerator::generateHeightmap(int mapSize_x, int mapSiz
 
 		std::cout << "Generating data.....\n";
 
-		for (int i = 0; i < mapSize_x; i++) {
+		const unsigned int max_threads = std::thread::hardware_concurrency();
+		const unsigned int iterations_per_thread = mapSize_x / max_threads;
+
+		std::vector<std::thread> threadpool;
+		for (int i = 0; i < max_threads; i++) {
+
+			int start = i * iterations_per_thread;
+			int end = (i == max_threads - 1) ? mapSize_x : start + iterations_per_thread;
+			threadpool.emplace_back(&TerrainGenerator::generateData, this, start, end, scale, octaves, persistence, mapSize_z, flag, std::ref(data));
+		}
+
+		for (std::thread& t : threadpool) {
+			t.join();
+		}
+
+		//generateData(i, j, scale, octaves, persistence, mapSize_z, flag, data);
+
+		/*for (int i = 0; i < mapSize_x; i++) {
 			for (int j = 0; j < mapSize_z; j++) {
 
 				double x = i * scale;
 				double y = j * scale;
 
 				if (flag == DOMAIN_WARP)
-					data[i * mapSize_z + j] = perlin.DW_Perlin(glm::vec2(x,y), octaves, persistence);
+					data[i * mapSize_z + j] = perlin.DW_Perlin(glm::vec2(x, y), octaves, persistence);
 				else if (flag == FBM)
 					data[i * mapSize_z + j] = perlin.octavePerlin(glm::vec2(x, y), octaves, persistence);
 				else
 					data[i * mapSize_z + j] = perlin.perlin(x, y);
 			}
-		}
+		}*/
 
 		if (write_to_file) {
 			std::ofstream file(name, std::ios::binary);
@@ -67,8 +86,28 @@ std::pair<int,int> TerrainGenerator::generateHeightmap(int mapSize_x, int mapSiz
 	return { mapSize_x, mapSize_z };
 }
 
+void TerrainGenerator::generateData(int start, int end, double scale, int octaves, double persistence, int mapSize_z, GenerationFlags flag, std::vector<float>& data) {
+
+	for (int i = start; i < end; i++) {
+		for (int j = 0; j < mapSize_z; j++) {
+
+			double x = i * scale;
+			double y = j * scale;
+
+			if (flag == DOMAIN_WARP)
+				data[i * mapSize_z + j] = perlin.DW_Perlin(glm::vec2(x, y), octaves, persistence);
+			else if (flag == FBM)
+				data[i * mapSize_z + j] = perlin.octavePerlin(glm::vec2(x, y), octaves, persistence);
+			else
+				data[i * mapSize_z + j] = perlin.perlin(x, y);
+
+		}
+	}
+
+}
+
 //given name
-std::pair<int,int> TerrainGenerator::loadHeightmap(std::string texture_name, std::vector<float>& data )
+std::pair<int, int> TerrainGenerator::loadHeightmap(std::string texture_name, std::vector<float>& data)
 {
 	std::cout << "Loading " << texture_name << '\n';
 
