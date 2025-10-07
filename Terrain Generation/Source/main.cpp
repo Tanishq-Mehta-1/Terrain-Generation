@@ -117,9 +117,6 @@ int main()
 	// 1024, p0.45, s0.0035, o16, scale 512, shift 256 white mountains
 	//use dw with low yScale and persistence
 
-	std::vector<float> vertices;
-	std::vector<unsigned int> indices;
-
 	float yScale = 512.0f, yShift = 256.0f; //range from -256 to 256
 	float seaLevel = -150.0f;
 
@@ -130,21 +127,29 @@ int main()
 		tMesh.map_dimensions = tGen.loadHeightmap("textures\iceland_heightmap.png", tMesh.data);
 	else
 	{
-		int map_size = 1024;
+		int map_size = 2048;
 		int mapSize_x = map_size, mapSize_z = map_size; //only squares, rectangles cause strips
-		double persistence = 0.335, scale = 0.0015; //keep scale v small
+		double persistence = 0.45, scale = 0.0015; //keep scale v small
 		int octaves = 16;
 
+		//testing
 		auto start = std::chrono::high_resolution_clock::now();
 		tMesh.map_dimensions = tGen.generateHeightmap(mapSize_x, mapSize_z, persistence, scale, octaves, FBM, false, tMesh.data);
 		auto end = std::chrono::high_resolution_clock::now();
 
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		std::cout << "Execution time: "  << duration.count() << '\n';
+		std::cout << "generating heightmap time: "  << duration.count() << '\n';
 	}
 
 	//initialise Terrain Renderer after data has been generated
+
+	//testing
+	auto start = std::chrono::high_resolution_clock::now();
 	TerrainRenderer tRen(objectShader, tMesh);
+	auto end = std::chrono::high_resolution_clock::now();
+
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+	std::cout << "loading vertices time: " << duration.count() << '\n';
 
 	////setting constant uniforms
 	glm::vec3 sun_color = glm::vec3(0.98, 0.85, 0.65);

@@ -96,7 +96,7 @@ double Perlin::octavePerlin(double x, double y, int octaves, double persistence)
 
 		maxValue += amplitude;
 		amplitude *= persistence;
-		frequency *= glm::pow(2.718, 1.23);
+		frequency *= 2;
 
 		//use diff values of products to change frequency, like 3, e^1.23 etc
 	}

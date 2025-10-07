@@ -31,7 +31,9 @@ private:
 	void setupUniforms(const Camera& c, int screenWidth, int screenHeight, const TerrainMesh& tMesh, int f);
 	void drawCall(int f, std::pair<int, int> size);
 	void loadVertices(TerrainMesh& tMesh);
+	void loadVertexRange(TerrainMesh& tMesh, int start, int end);
 	void loadIndices(int mapSize_x, int mapSize_z, std::vector<unsigned int>& indices);
+	void loadIndicesRange(int mapSize_x, int mapSize_z, std::vector<unsigned int>& indices, int start, int end);
 };
 
 #endif

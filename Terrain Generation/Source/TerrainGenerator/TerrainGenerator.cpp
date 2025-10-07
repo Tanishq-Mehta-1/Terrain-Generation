@@ -48,23 +48,6 @@ std::pair<int, int> TerrainGenerator::generateHeightmap(int mapSize_x, int mapSi
 			t.join();
 		}
 
-		//generateData(i, j, scale, octaves, persistence, mapSize_z, flag, data);
-
-		/*for (int i = 0; i < mapSize_x; i++) {
-			for (int j = 0; j < mapSize_z; j++) {
-
-				double x = i * scale;
-				double y = j * scale;
-
-				if (flag == DOMAIN_WARP)
-					data[i * mapSize_z + j] = perlin.DW_Perlin(glm::vec2(x, y), octaves, persistence);
-				else if (flag == FBM)
-					data[i * mapSize_z + j] = perlin.octavePerlin(glm::vec2(x, y), octaves, persistence);
-				else
-					data[i * mapSize_z + j] = perlin.perlin(x, y);
-			}
-		}*/
-
 		if (write_to_file) {
 			std::ofstream file(name, std::ios::binary);
 			if (!file) throw std::runtime_error("Could not open the file: " + name + '\n');
@@ -103,7 +86,6 @@ void TerrainGenerator::generateData(int start, int end, double scale, int octave
 
 		}
 	}
-
 }
 
 //given name
