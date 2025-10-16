@@ -1,6 +1,6 @@
 #version 460
 
-layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 layout(rgba32f, binding = 0) uniform image2D imgOut;
 
 //randomly arranged 512 integers
@@ -45,7 +45,6 @@ uniform int repeat;
 uniform int octaves;
 uniform float scale;
 uniform float persistence;
-uniform ivec2 tileOffset;
 
 float fade(float t) {
 	return t * t * t * (t * (6 * t - 15) + 10);
@@ -142,15 +141,16 @@ float DW_Perlin(vec2 p, float octaves, float persistence) {
 
 void main(){
 	
-	ivec2 local_coord = ivec2(gl_GlobalInvocationID.xy);
-	ivec2 globalCoord = local_coord * tileOffset;
+	ivec2 globalCoord = ivec2(gl_GlobalInvocationID.xy);
 
 	ivec2 size = imageSize(imgOut);
+	if (globalCoord.x >= size.x || globalCoord.y >= size.y) return;
+
 	vec2 uv = vec2(globalCoord) / vec2(size);
 
 	float temp = octavePerlin(uv * scale);
-	vec4 value = vec4(temp ,temp, temp, 1);
-
+	vec4 value = vec4(temp, temp, temp, 1.0f);
+	
 	imageStore(imgOut, globalCoord, value);
 }
 

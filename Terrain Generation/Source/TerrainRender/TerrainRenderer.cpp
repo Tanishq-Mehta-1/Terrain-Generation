@@ -4,16 +4,44 @@
 
 TerrainRenderer::TerrainRenderer(Shader shader, TerrainMesh& tMesh) {
 	this->shader = shader;
-	loadVertices(tMesh);
+	loadVerticesComp(tMesh);
 	loadIndices(tMesh.map_dimensions.first, tMesh.map_dimensions.second, tMesh.indices);
-	setupBuffers(tMesh.vertices, tMesh.indices);
+	setupBuffersComp(tMesh.vertices, tMesh.indices);
 };
 
 void TerrainRenderer::RenderTerrain(TerrainMesh& tMesh, glm::vec3 sunCol, glm::vec3 sunDir, const Camera& c, int screenWidth, int screenHeight, int f) {
 	setupSun(sunCol, sunDir);
 	setupUniforms(c, screenWidth, screenHeight, tMesh, f);
-	drawCall(f, tMesh.map_dimensions);
+	drawCall(f, tMesh.map_dimensions, tMesh.heightMap_texture);
 };
+
+void TerrainRenderer::setupBuffersComp(std::vector<float>& vertices, std::vector<unsigned int>& indices) {
+
+	// register VAO
+	glGenVertexArrays(1, &terrainVAO);
+	glBindVertexArray(terrainVAO);
+
+	glGenBuffers(1, &terrainVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, terrainVBO);
+	glBufferData(GL_ARRAY_BUFFER,
+		vertices.size() * sizeof(float),       // size of vertices buffer
+		vertices.data(),                          // pointer to first element
+		GL_STATIC_DRAW);
+
+	// position attribute
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	// uv attribute
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glGenBuffers(1, &terrainEBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, terrainEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+		indices.size() * sizeof(unsigned int), // size of indices buffer
+		&indices[0],                           // pointer to first element
+		GL_STATIC_DRAW);
+}
 
 void TerrainRenderer::setupBuffers(std::vector<float>& vertices, std::vector<unsigned int>& indices) {
 
@@ -64,6 +92,7 @@ void TerrainRenderer::setupUniforms(const Camera& c, int screenWidth, int screen
 	shader.setMat4("projection", projection);
 	shader.setMat4("view", view);
 	shader.setMat4("model", model);
+	shader.setInt("heightMap", 0);
 
 	shader.setFloat("minHeight", tMesh.seaLevel);
 	shader.setFloat("maxHeight", tMesh.yScale - tMesh.yShift);
@@ -72,19 +101,47 @@ void TerrainRenderer::setupUniforms(const Camera& c, int screenWidth, int screen
 	shader.setVec3("viewPos", c.Position);
 }
 
-void TerrainRenderer::drawCall(int f, std::pair<int, int> size) {
+void TerrainRenderer::drawCall(int f, std::pair<int, int> size, unsigned int heightmap) {
 
 	int NUM_STRIPS = size.first - 1;
 	int NUM_VERT_PER_STRIP = size.second * 2;
 
 	//draw calls
 	glBindVertexArray(terrainVAO);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, heightmap);
+
 	for (unsigned int strip = 0; strip < NUM_STRIPS; strip++) {
 		if (f & WIREFRAME)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glDrawElements(GL_TRIANGLE_STRIP, NUM_VERT_PER_STRIP, GL_UNSIGNED_INT, (void*)(sizeof(unsigned int) * NUM_VERT_PER_STRIP * strip));
 	}
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
+void TerrainRenderer::loadVerticesComp(TerrainMesh& tMesh) {
+	int mapSize_x = tMesh.map_dimensions.first;
+	int mapSize_z = tMesh.map_dimensions.second;
+	float yScale = tMesh.yScale;
+	float yShift = tMesh.yShift;
+	float seaLevel = tMesh.seaLevel;
+
+	tMesh.vertices = std::vector<float>(mapSize_x * mapSize_z * 5, 0);
+
+	for (int i = 0; i < mapSize_x; i++) {
+		for (int j = 0; j < mapSize_z; j++) {
+
+			//load vertices
+			int ind = (i * mapSize_z + j) * 5;
+			tMesh.vertices[ind++] = -mapSize_x / 2.0f + i;
+			tMesh.vertices[ind++] = 0;
+			tMesh.vertices[ind++] = -mapSize_z / 2.0f + j;
+
+			//load uv
+			tMesh.vertices[ind++] = float(i) / mapSize_x;
+			tMesh.vertices[ind++] = float(j) / mapSize_z;
+		}
+	}
 }
 
 void TerrainRenderer::loadVertices(TerrainMesh& tMesh) {

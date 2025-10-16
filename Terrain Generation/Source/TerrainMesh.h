@@ -12,6 +12,7 @@ public:
 	std::vector<unsigned int> indices;
 	std::pair<int, int> map_dimensions;
 
+	unsigned int heightMap_texture;
 	float yScale;
 	float yShift;
 	float seaLevel;

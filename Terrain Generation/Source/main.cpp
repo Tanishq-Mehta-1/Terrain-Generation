@@ -21,8 +21,6 @@ unsigned int generateFrameBuffer(unsigned int& fbo, unsigned int& color_buffer, 
 unsigned int generateScreenQuad(unsigned int& VAO);
 static float getRandom(float min, float max);
 void toggle_mode(GLFWwindow* window, int key, bool& toSwitch);
-void loadVertices(int mapSize_x, int mapSize_z, int yScale, int yShift, int seaLevel, std::vector<float>& data, std::vector<float>& vertices);
-void loadIndices(int mapSize_x, int mapSize_z, std::vector<unsigned int>& indices);
 int handleToggle(bool wireframe, bool fog, bool atmos);
 
 //setings
@@ -118,8 +116,9 @@ int main()
 	//use dw with low yScale and persistence
 
 	float yScale = 512.0f, yShift = 256.0f; //range from -256 to 256
-	float seaLevel = -150.0f;
+	float seaLevel = -512.0f;
 
+	auto start = std::chrono::high_resolution_clock::now();
 	TerrainMesh tMesh(yScale, yShift, seaLevel);
 	TerrainGenerator tGen(1000);
 
@@ -129,27 +128,20 @@ int main()
 	{
 		int map_size = 2048;
 		int mapSize_x = map_size, mapSize_z = map_size; //only squares, rectangles cause strips
-		double persistence = 0.45, scale = 0.0015; //keep scale v small
-		int octaves = 16;
+		double persistence = 0.45f, scale = 8.0f; //keep scale v small
+		int octaves = 4;
 
-		//testing
-		auto start = std::chrono::high_resolution_clock::now();
-		tMesh.map_dimensions = tGen.generateHeightmap(mapSize_x, mapSize_z, persistence, scale, octaves, FBM, false, tMesh.data);
-		auto end = std::chrono::high_resolution_clock::now();
-
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-		std::cout << "generating heightmap time: "  << duration.count() << '\n';
+		//tMesh.map_dimensions = tGen.generateHeightmap(mapSize_x, mapSize_z, persistence, scale, octaves, FBM, write_to_file, tMesh.data);
+		tMesh.map_dimensions = { mapSize_x, mapSize_z} ;
+		tMesh.heightMap_texture = tGen.generateHeightmapComp(mapSize_x, mapSize_z, persistence, scale, octaves);
 	}
 
 	//initialise Terrain Renderer after data has been generated
-
-	//testing
-	auto start = std::chrono::high_resolution_clock::now();
 	TerrainRenderer tRen(objectShader, tMesh);
-	auto end = std::chrono::high_resolution_clock::now();
 
+	auto end = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-	std::cout << "loading vertices time: " << duration.count() << '\n';
+	std::cout << "Setup time: " << duration.count() << "ms\n";
 
 	////setting constant uniforms
 	glm::vec3 sun_color = glm::vec3(0.98, 0.85, 0.65);

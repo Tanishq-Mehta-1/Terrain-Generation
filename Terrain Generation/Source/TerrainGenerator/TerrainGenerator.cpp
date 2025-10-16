@@ -8,11 +8,11 @@
 
 #include "TerrainGenerator.h"
 
+#include <shader.h>
 #include <thread>
 
 TerrainGenerator::TerrainGenerator(int period) {
 	perlin.repeat = period;
-
 };
 
 //with given parameters, give options for fbm, domain warp etc
@@ -67,6 +67,37 @@ std::pair<int, int> TerrainGenerator::generateHeightmap(int mapSize_x, int mapSi
 	}
 
 	return { mapSize_x, mapSize_z };
+}
+
+unsigned int TerrainGenerator::generateHeightmapComp(int mapSize_x, int mapSize_z, double persistence, double scale, int octaves)
+{
+	Shader perlin("C:\\Users\\tanis\\source\\repos\\Terrain Generation\\Terrain Generation\\Source\\TerrainGenerator\\perlin.comp");
+
+	//generate image texture
+	unsigned int imgOut;
+	glGenTextures(1, &imgOut);
+	glBindTexture(GL_TEXTURE_2D, imgOut);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	//geneerate an empty image object
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, mapSize_x, mapSize_z, 0, GL_RGBA, GL_FLOAT, NULL);
+	glBindImageTexture(0, imgOut, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+	perlin.use();
+	perlin.setInt("repeat", 1000);
+	perlin.setInt("octaves", octaves);
+	perlin.setFloat("scale", scale); // Increased scale for more visible features
+	perlin.setFloat("persistence", persistence);
+	
+	perlin.useCompute(ceil(mapSize_x / 8), ceil(mapSize_z / 8), 1);
+
+	int w, h;
+	glBindTexture(GL_TEXTURE_2D, imgOut); 
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w); 
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+	std::cout << w << ' ' << h << '\n';
+
+ 	return imgOut;
 }
 
 void TerrainGenerator::generateData(int start, int end, double scale, int octaves, double persistence, int mapSize_z, GenerationFlags flag, std::vector<float>& data) {
