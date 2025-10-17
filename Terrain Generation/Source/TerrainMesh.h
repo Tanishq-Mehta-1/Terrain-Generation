@@ -7,7 +7,6 @@
 class TerrainMesh {
 
 public:
-	std::vector<float> data;
 	std::vector<float> vertices;
 	std::vector<unsigned int> indices;
 	std::pair<int, int> map_dimensions;

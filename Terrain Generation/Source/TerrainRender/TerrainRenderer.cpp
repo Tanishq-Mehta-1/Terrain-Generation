@@ -43,34 +43,6 @@ void TerrainRenderer::setupBuffersComp(std::vector<float>& vertices, std::vector
 		GL_STATIC_DRAW);
 }
 
-void TerrainRenderer::setupBuffers(std::vector<float>& vertices, std::vector<unsigned int>& indices) {
-
-	// register VAO
-	glGenVertexArrays(1, &terrainVAO);
-	glBindVertexArray(terrainVAO);
-
-	glGenBuffers(1, &terrainVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, terrainVBO);
-	glBufferData(GL_ARRAY_BUFFER,
-		vertices.size() * sizeof(float),       // size of vertices buffer
-		vertices.data(),                          // pointer to first element
-		GL_STATIC_DRAW);
-
-	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	// normal attribute
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	glGenBuffers(1, &terrainEBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, terrainEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-		indices.size() * sizeof(unsigned int), // size of indices buffer
-		&indices[0],                           // pointer to first element
-		GL_STATIC_DRAW);
-}
-
 void TerrainRenderer::setupSun(glm::vec3 sunCol, glm::vec3 sunDir) {
 
 	shader.use();
@@ -93,6 +65,9 @@ void TerrainRenderer::setupUniforms(const Camera& c, int screenWidth, int screen
 	shader.setMat4("view", view);
 	shader.setMat4("model", model);
 	shader.setInt("heightMap", 0);
+	shader.setFloat("yShift", tMesh.yShift);
+	shader.setFloat("yScale", tMesh.yScale);
+	shader.setFloat("seaLevel", tMesh.seaLevel);
 
 	shader.setFloat("minHeight", tMesh.seaLevel);
 	shader.setFloat("maxHeight", tMesh.yScale - tMesh.yShift);
@@ -138,111 +113,12 @@ void TerrainRenderer::loadVerticesComp(TerrainMesh& tMesh) {
 			tMesh.vertices[ind++] = -mapSize_z / 2.0f + j;
 
 			//load uv
-			tMesh.vertices[ind++] = float(i) / mapSize_x;
-			tMesh.vertices[ind++] = float(j) / mapSize_z;
+			tMesh.vertices[ind++] = float(i) / (mapSize_x - 1);
+			tMesh.vertices[ind++] = float(j) / (mapSize_z - 1);
 		}
 	}
-}
-
-void TerrainRenderer::loadVertices(TerrainMesh& tMesh) {
-
-	int mapSize_x = tMesh.map_dimensions.first;
-	int mapSize_z = tMesh.map_dimensions.second;/*
-	float yScale = tMesh.yScale;
-	float yShift = tMesh.yShift;
-	float seaLevel = tMesh.seaLevel;*/
-
-	tMesh.vertices = std::vector<float>(mapSize_x * mapSize_z * 6, 0);
-
-	const unsigned int max_threads = std::thread::hardware_concurrency();
-	const unsigned int iterations_per_thread = mapSize_x / max_threads;
-
-	std::vector<std::thread> threadpool;
-	for (int i = 0; i < max_threads; i++) {
-
-		int start = i * iterations_per_thread;
-		int end = (i == max_threads - 1) ? mapSize_x : start + iterations_per_thread;
-		threadpool.emplace_back(&TerrainRenderer::loadVertexRange, this, std::ref(tMesh), start, end);
-	}
-
-	for (std::thread& t : threadpool) {
-		t.join();
-	}
-
-	//int ind = 0;
-	//for (int i = 0; i < mapSize_x; i++) {
-	//	for (int j = 0; j < mapSize_z; j++) {
-	//		
-	//		double y = tMesh.data[i * mapSize_z + j];
-	//		float height = y * yScale - yShift;
-	//		if (height < seaLevel) height = seaLevel;
-
-	//		tMesh.vertices[ind++] = -mapSize_x / 2.0f + i;
-	//		tMesh.vertices[ind++] = height;
-	//		tMesh.vertices[ind++] = -mapSize_z / 2.0f + j;
-
-	//		calculate normals
-	//		float hL, hR, hU, hD;
-	//		hL = hR = hD = hU = height;
-
-	//		if (i != 0)
-	//			hL = tMesh.data[(i - 1) * mapSize_z + j] * yScale - yShift; // left
-	//		if (i != mapSize_x - 1)
-	//			hR = tMesh.data[(i + 1) * mapSize_z + j] * yScale - yShift; // right
-	//		if (j != 0)
-	//			hD = tMesh.data[i * mapSize_z + j - 1] * yScale - yShift; // down
-	//		if (j != mapSize_z - 1)
-	//			hU = tMesh.data[i * mapSize_z + j + 1] * yScale - yShift; // up
-
-	//		glm::vec3 normal = glm::normalize(glm::vec3((hL - hR) / 2.0f, 1.0f, (hD - hU) / 2.0f));
-	//		tMesh.vertices[ind++] = normal.x;
-	//		tMesh.vertices[ind++] = normal.y;
-	//		tMesh.vertices[ind++] = normal.z;
-	//	}
-	//}
 
 	std::cout << "Loaded " << tMesh.vertices.size() << " vertices" << std::endl;
-}
-
-void TerrainRenderer::loadVertexRange(TerrainMesh& tMesh, int start, int end) {
-
-	int mapSize_x = tMesh.map_dimensions.first;
-	int mapSize_z = tMesh.map_dimensions.second;
-	float yScale = tMesh.yScale;
-	float yShift = tMesh.yShift;
-	float seaLevel = tMesh.seaLevel;
-
-	for (int i = start; i < end; i++) {
-		for (int j = 0; j < mapSize_z; j++) {
-
-			double y = tMesh.data[i * mapSize_z + j];
-			float height = y * yScale - yShift;
-			if (height < seaLevel) height = seaLevel;
-
-			int ind = (i * mapSize_z + j) * 6;
-			tMesh.vertices[ind++] = -mapSize_x / 2.0f + i;
-			tMesh.vertices[ind++] = height;
-			tMesh.vertices[ind++] = -mapSize_z / 2.0f + j;
-
-			//calculate normals
-			float hL, hR, hU, hD;
-			hL = hR = hD = hU = height;
-
-			if (i != 0)
-				hL = tMesh.data[(i - 1) * mapSize_z + j] * yScale - yShift; // left
-			if (i != mapSize_x - 1)
-				hR = tMesh.data[(i + 1) * mapSize_z + j] * yScale - yShift; // right
-			if (j != 0)
-				hD = tMesh.data[i * mapSize_z + j - 1] * yScale - yShift; // down
-			if (j != mapSize_z - 1)
-				hU = tMesh.data[i * mapSize_z + j + 1] * yScale - yShift; // up
-
-			glm::vec3 normal = glm::normalize(glm::vec3((hL - hR) / 2.0f, 1.0f, (hD - hU) / 2.0f));
-			tMesh.vertices[ind++] = normal.x;
-			tMesh.vertices[ind++] = normal.y;
-			tMesh.vertices[ind++] = normal.z;
-		}
-	}
 }
 
 void TerrainRenderer::loadIndices(int mapSize_x, int mapSize_z, std::vector<unsigned int>& indices) {

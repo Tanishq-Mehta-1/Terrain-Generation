@@ -1,6 +1,6 @@
 #version 460
 
-layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 layout(rgba32f, binding = 0) uniform image2D imgOut;
 
 //randomly arranged 512 integers
@@ -45,6 +45,7 @@ uniform int repeat;
 uniform int octaves;
 uniform float scale;
 uniform float persistence;
+uniform int flag;
 
 float fade(float t) {
 	return t * t * t * (t * (6 * t - 15) + 10);
@@ -125,7 +126,7 @@ float octavePerlin(vec2 vec) {
 	return octavePerlin(vec.x, vec.y);
 }
 
-float DW_Perlin(vec2 p, float octaves, float persistence) {
+float DW_Perlin(vec2 p) {
 	vec2 q = vec2(
 		octavePerlin(p + vec2(0.0, 0.0)),
 		octavePerlin(p + vec2(5.2, 1.3))
@@ -146,10 +147,17 @@ void main(){
 	ivec2 size = imageSize(imgOut);
 	if (globalCoord.x >= size.x || globalCoord.y >= size.y) return;
 
-	vec2 uv = vec2(globalCoord) / vec2(size);
+	vec2 uv = vec2(globalCoord) * scale;
 
-	float temp = octavePerlin(uv * scale);
-	vec4 value = vec4(temp, temp, temp, 1.0f);
+	float pixel_val;
+	if (flag == 0)
+		pixel_val = perlin(uv.x, uv.y);
+	else if (flag == 1)
+		pixel_val = octavePerlin(uv);
+	else if (flag == 2)
+		pixel_val = DW_Perlin(uv);
+
+	vec4 value = vec4(pixel_val, pixel_val, pixel_val, 1.0f);
 	
 	imageStore(imgOut, globalCoord, value);
 }

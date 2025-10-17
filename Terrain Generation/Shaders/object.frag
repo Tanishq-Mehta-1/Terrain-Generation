@@ -54,7 +54,7 @@ void main()
 	vec4 water = vec4(0.0,0.53,0.74,1.0f);
 	vec4 grass = vec4(0.13,0.55,0.13,1.0f);
 
-	float snow_alt = 0.8;
+	float snow_alt = 0.6;
 	float rock_alt = 0.4;
 	float soil_alt = 0.4;
 	float grass_alt = 0.0;

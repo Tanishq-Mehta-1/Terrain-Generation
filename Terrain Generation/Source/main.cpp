@@ -112,29 +112,27 @@ int main()
 	generateScreenQuad(screenVAO);
 
 	//nice settigns: (16 octaves is nice)
-	// 1024, p0.45, s0.0035, o16, scale 512, shift 256 white mountains
+	//1024, p0.45, s0.0035f, o16, scale 512, shift 256 white mountains
 	//use dw with low yScale and persistence
 
-	float yScale = 512.0f, yShift = 256.0f; //range from -256 to 256
-	float seaLevel = -512.0f;
+	// 1024, p0.45, s256.0f, o16, scale 1024, shift 512 nice valley
+
+	float yScale = 1024, yShift = 512; //range from -256 to 256
+	float seaLevel = -150.0f;
 
 	auto start = std::chrono::high_resolution_clock::now();
 	TerrainMesh tMesh(yScale, yShift, seaLevel);
-	TerrainGenerator tGen(1000);
+	TerrainGenerator tGen;
 
-	if (load_from_image)
-		tMesh.map_dimensions = tGen.loadHeightmap("textures\iceland_heightmap.png", tMesh.data);
-	else
-	{
-		int map_size = 2048;
-		int mapSize_x = map_size, mapSize_z = map_size; //only squares, rectangles cause strips
-		double persistence = 0.45f, scale = 8.0f; //keep scale v small
-		int octaves = 4;
+	//generate the map
+	int map_size = 2048;
+	int mapSize_x = map_size, mapSize_z = map_size; //only squares, rectangles cause strips
+	double persistence = 0.45f, scale = 0.00097;//keep scale v small
+	int octaves = 16;
 
-		//tMesh.map_dimensions = tGen.generateHeightmap(mapSize_x, mapSize_z, persistence, scale, octaves, FBM, write_to_file, tMesh.data);
-		tMesh.map_dimensions = { mapSize_x, mapSize_z} ;
-		tMesh.heightMap_texture = tGen.generateHeightmapComp(mapSize_x, mapSize_z, persistence, scale, octaves);
-	}
+	//tMesh.map_dimensions = tGen.generateHeightmap(mapSize_x, mapSize_z, persistence, scale, octaves, FBM, write_to_file, tMesh.data);
+	tMesh.map_dimensions = { mapSize_x, mapSize_z };
+	tMesh.heightMap_texture = tGen.generateHeightmapComp(mapSize_x, mapSize_z, persistence, scale, octaves, FBM);
 
 	//initialise Terrain Renderer after data has been generated
 	TerrainRenderer tRen(objectShader, tMesh);
