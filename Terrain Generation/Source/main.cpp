@@ -49,8 +49,6 @@ constexpr bool load_from_image{ false };
 //camera setup
 Camera camera(glm::vec3(0.0f, 100.0f, 100.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), yaw, pitch);
 
-Perlin perlin(1000);
-
 float quadVertices[] = {
 	// positions   // texCoords
 	-1.0f,  1.0f,  0.0f, 1.0f,
@@ -91,8 +89,10 @@ int main()
 
 
 	Shader objectShader(
-		"C:\\Users\\tanis\\source\\repos\\Terrain Generation\\Terrain Generation\\Shaders\\object.vert",
-		"C:\\Users\\tanis\\source\\repos\\Terrain Generation\\Terrain Generation\\Shaders\\object.frag");
+		"C:\\Users\\tanis\\source\\repos\\Terrain Generation\\Terrain Generation\\Shaders\\tess.vert",
+		"C:\\Users\\tanis\\source\\repos\\Terrain Generation\\Terrain Generation\\Shaders\\object.frag",
+		"C:\\Users\\tanis\\source\\repos\\Terrain Generation\\Terrain Generation\\Shaders\\tess_tcs.glsl",
+		"C:\\Users\\tanis\\source\\repos\\Terrain Generation\\Terrain Generation\\Shaders\\tess_tes.glsl");
 	Shader screenShader(
 		"C:\\Users\\tanis\\source\\repos\\Terrain Generation\\Terrain Generation\\Shaders\\post_process.vert",
 		"C:\\Users\\tanis\\source\\repos\\Terrain Generation\\Terrain Generation\\Shaders\\post_process.frag");
@@ -117,16 +117,18 @@ int main()
 
 	// 1024, p0.45, s256.0f, o16, scale 1024, shift 512 nice valley
 
-	float yScale = 1024, yShift = 512; //range from -256 to 256
-	float seaLevel = -150.0f;
+	//scale = 2000, shift = 1000, rez = 50, mapsize = 6000 x 6000, p0.45, s0.00097, o16
+
+	float yScale = 1000, yShift = 500; //range from -256 to 256
+	float seaLevel = -yShift;
+	float rez = 50;
 
 	auto start = std::chrono::high_resolution_clock::now();
-	TerrainMesh tMesh(yScale, yShift, seaLevel);
+	TerrainMesh tMesh(yScale, yShift, seaLevel, rez);
 	TerrainGenerator tGen;
-
+	
 	//generate the map
-	int map_size = 2048;
-	int mapSize_x = map_size, mapSize_z = map_size; //only squares, rectangles cause strips
+	int mapSize_x = 3000, mapSize_z = 3000; 
 	double persistence = 0.45f, scale = 0.00097;//keep scale v small
 	int octaves = 16;
 
@@ -159,7 +161,7 @@ int main()
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		objectShader.use();
 
-		glm::vec3 bgCol = glm::vec3(1.0f);
+		glm::vec3 bgCol = glm::vec3(0.529, 0.808, 0.922);
 		glClearColor(bgCol.x, bgCol.y, bgCol.z, 1.0);
 		glEnable(GL_DEPTH_TEST);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

@@ -50,6 +50,10 @@
     <None Include="Shaders\post_process.vert">
       <Filter>Source Files\Shaders</Filter>
     </None>
+    <None Include="Source\TerrainGenerator\perlin.comp" />
+    <None Include="Shaders\tess.vert" />
+    <None Include="Shaders\tess_tcs.glsl" />
+    <None Include="Shaders\tess_tes.glsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Vendors\camera.h">

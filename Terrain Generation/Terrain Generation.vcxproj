@@ -140,6 +140,10 @@
     <None Include="Shaders\object.vert" />
     <None Include="Shaders\post_process.frag" />
     <None Include="Shaders\post_process.vert" />
+    <None Include="Shaders\tess.vert" />
+    <None Include="Shaders\tess_tcs.glsl" />
+    <None Include="Shaders\tess_tes.glsl" />
+    <None Include="Source\TerrainGenerator\perlin.comp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Headers\framebuffer.h" />

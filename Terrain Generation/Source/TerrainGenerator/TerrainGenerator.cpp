@@ -34,7 +34,7 @@ unsigned int TerrainGenerator::generateHeightmapComp(int mapSize_x, int mapSize_
 	perlin.setFloat("persistence", persistence);
 	perlin.setInt("flag", flag);
 	
-	perlin.useCompute(ceil(mapSize_x / 16), ceil(mapSize_z / 16), 1);
+	perlin.useCompute(ceil(mapSize_x / 16), ceil(mapSize_z / 16), 1, GL_TEXTURE_FETCH_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 	std::cout << "Generated Heightmap\n";
 

@@ -1,7 +1,6 @@
 #ifndef TERRAIN_GENERATOR_H
 #define TERRAIN_GENERATOR_H
 
-#include "perlin.h"
 #include <iostream>
 #include <fstream>
 

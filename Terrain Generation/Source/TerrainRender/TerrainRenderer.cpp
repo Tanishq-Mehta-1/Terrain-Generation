@@ -4,18 +4,19 @@
 
 TerrainRenderer::TerrainRenderer(Shader shader, TerrainMesh& tMesh) {
 	this->shader = shader;
-	loadVerticesComp(tMesh);
-	loadIndices(tMesh.map_dimensions.first, tMesh.map_dimensions.second, tMesh.indices);
-	setupBuffersComp(tMesh.vertices, tMesh.indices);
+	loadVerticesTess(tMesh);
+	setupBuffersTess(tMesh.vertices);
 };
 
 void TerrainRenderer::RenderTerrain(TerrainMesh& tMesh, glm::vec3 sunCol, glm::vec3 sunDir, const Camera& c, int screenWidth, int screenHeight, int f) {
 	setupSun(sunCol, sunDir);
 	setupUniforms(c, screenWidth, screenHeight, tMesh, f);
-	drawCall(f, tMesh.map_dimensions, tMesh.heightMap_texture);
+	drawCallTess(f, tMesh.rez, tMesh.heightMap_texture);
 };
 
-void TerrainRenderer::setupBuffersComp(std::vector<float>& vertices, std::vector<unsigned int>& indices) {
+void TerrainRenderer::setupBuffersTess(std::vector<float>& vertices) {
+
+	glPatchParameteri(GL_PATCH_VERTICES, 4);
 
 	// register VAO
 	glGenVertexArrays(1, &terrainVAO);
@@ -34,13 +35,6 @@ void TerrainRenderer::setupBuffersComp(std::vector<float>& vertices, std::vector
 	// uv attribute
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
-
-	glGenBuffers(1, &terrainEBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, terrainEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-		indices.size() * sizeof(unsigned int), // size of indices buffer
-		&indices[0],                           // pointer to first element
-		GL_STATIC_DRAW);
 }
 
 void TerrainRenderer::setupSun(glm::vec3 sunCol, glm::vec3 sunDir) {
@@ -76,83 +70,57 @@ void TerrainRenderer::setupUniforms(const Camera& c, int screenWidth, int screen
 	shader.setVec3("viewPos", c.Position);
 }
 
-void TerrainRenderer::drawCall(int f, std::pair<int, int> size, unsigned int heightmap) {
-
-	int NUM_STRIPS = size.first - 1;
-	int NUM_VERT_PER_STRIP = size.second * 2;
+void TerrainRenderer::drawCallTess(int f, int rez, unsigned int heightmap) {
 
 	//draw calls
 	glBindVertexArray(terrainVAO);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, heightmap);
 
-	for (unsigned int strip = 0; strip < NUM_STRIPS; strip++) {
-		if (f & WIREFRAME)
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		glDrawElements(GL_TRIANGLE_STRIP, NUM_VERT_PER_STRIP, GL_UNSIGNED_INT, (void*)(sizeof(unsigned int) * NUM_VERT_PER_STRIP * strip));
-	}
+	if (f & WIREFRAME)
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glDrawArrays(GL_PATCHES, 0, 4 * rez * rez);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void TerrainRenderer::loadVerticesComp(TerrainMesh& tMesh) {
+void TerrainRenderer::loadVerticesTess(TerrainMesh& tMesh) {
 	int mapSize_x = tMesh.map_dimensions.first;
 	int mapSize_z = tMesh.map_dimensions.second;
 	float yScale = tMesh.yScale;
 	float yShift = tMesh.yShift;
 	float seaLevel = tMesh.seaLevel;
+	float rez = tMesh.rez;
 
-	tMesh.vertices = std::vector<float>(mapSize_x * mapSize_z * 5, 0);
+	tMesh.vertices.reserve(rez * rez * 4);
 
-	for (int i = 0; i < mapSize_x; i++) {
-		for (int j = 0; j < mapSize_z; j++) {
+	for (int i = 0; i < rez; i++) {
+		for (int j = 0; j < rez; j++) {
 
-			//load vertices
-			int ind = (i * mapSize_z + j) * 5;
-			tMesh.vertices[ind++] = -mapSize_x / 2.0f + i;
-			tMesh.vertices[ind++] = 0;
-			tMesh.vertices[ind++] = -mapSize_z / 2.0f + j;
+			tMesh.vertices.push_back(-mapSize_x / 2.0f + mapSize_x * i / rez); // v.x
+			tMesh.vertices.push_back(0.0f); // v.y
+			tMesh.vertices.push_back(-mapSize_z / 2.0f + mapSize_z * j / rez); // v.z
+			tMesh.vertices.push_back(i / rez); // u
+			tMesh.vertices.push_back(j / rez); // v
 
-			//load uv
-			tMesh.vertices[ind++] = float(i) / (mapSize_x - 1);
-			tMesh.vertices[ind++] = float(j) / (mapSize_z - 1);
+			tMesh.vertices.push_back(-mapSize_x / 2.0f + mapSize_x * (i + 1) / rez); // v.x
+			tMesh.vertices.push_back(0.0f); // v.y
+			tMesh.vertices.push_back(-mapSize_z / 2.0f + mapSize_z * j / rez); // v.z
+			tMesh.vertices.push_back((i + 1) / rez); // u
+			tMesh.vertices.push_back(j / rez); // v
+
+			tMesh.vertices.push_back(-mapSize_x / 2.0f + mapSize_x * i / rez); // v.x
+			tMesh.vertices.push_back(0.0f); // v.y
+			tMesh.vertices.push_back(-mapSize_z / 2.0f + mapSize_z * (j + 1) / rez); // v.z
+			tMesh.vertices.push_back(i / rez); // u
+			tMesh.vertices.push_back((j + 1) / rez); // v
+
+			tMesh.vertices.push_back(-mapSize_x / 2.0f + mapSize_x * (i + 1) / rez); // v.x
+			tMesh.vertices.push_back(0.0f); // v.y
+			tMesh.vertices.push_back(-mapSize_z / 2.0f + mapSize_z * (j + 1) / rez); // v.z
+			tMesh.vertices.push_back((i + 1) / rez); // u
+			tMesh.vertices.push_back((j + 1) / rez); // v
 		}
 	}
 
 	std::cout << "Loaded " << tMesh.vertices.size() << " vertices" << std::endl;
-}
-
-void TerrainRenderer::loadIndices(int mapSize_x, int mapSize_z, std::vector<unsigned int>& indices) {
-
-	indices = std::vector<unsigned int>(mapSize_z * mapSize_x * 2, 0);
-
-	const unsigned int max_threads = std::thread::hardware_concurrency();
-	const unsigned int iterations_per_thread = mapSize_x / max_threads;
-
-	std::vector<std::thread> threadpool;
-	for (int i = 0; i < max_threads; i++) {
-
-		int start = i * iterations_per_thread;
-		int end = (i == max_threads - 1) ? mapSize_x : start + iterations_per_thread;
-		threadpool.emplace_back(&TerrainRenderer::loadIndicesRange, this, mapSize_x, mapSize_z, std::ref(indices), start, end);
-	}
-
-	for (std::thread& t : threadpool) {
-		t.join();
-	}
-
-	std::cout << "Loaded " << indices.size() << " indices" << std::endl;
-}
-
-void TerrainRenderer::loadIndicesRange(int mapSize_x, int mapSize_z, std::vector<unsigned int>& indices, int start, int end) {
-
-	for (int i = start; i < end; i++) {
-		for (int j = 0; j < mapSize_z; j++) {
-
-			int ind = (i * mapSize_z + j) * 2;
-
-			indices[ind] = i * mapSize_z + j;
-			indices[ind + 1] = (i + 1) * mapSize_z + j;
-
-		}
-	}
 }

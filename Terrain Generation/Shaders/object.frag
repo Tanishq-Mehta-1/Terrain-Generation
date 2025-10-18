@@ -42,43 +42,42 @@ vec3 calculateDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 baseColor
 
 void main()
 {
-	float frac = (height - minHeight) / (maxHeight - minHeight);
-	vec4 col = vec4(vec3(frac),1.0f);
-//	vec4 col = calculateDirLightCol(dir, vec4(vec3(frac), 1.0f));
+    // Colors
+    vec3 deep_water    = vec3(0.109, 0.239, 0.321);
+    vec3 shallow_water = vec3(0.235, 0.513, 0.568);
+    vec3 sand          = vec3(0.839, 0.745, 0.552);
+    vec3 grass         = vec3(0.419, 0.580, 0.286);
+    vec3 forest        = vec3(0.345, 0.298, 0.172);
+    vec3 rock          = vec3(0.445, 0.429, 0.421);
+    vec3 snow          = vec3(0.941, 0.956, 0.968);
 
-	float param = abs(dot(normalize(Normal), vec3(0.0,1.0,0.0))); //btw 0,1
+    // Normalized height thresholds for blending
+    float water_level  = 0.05;
+    float sand_level   = 0.10;
+    float grass_level  = 0.35;
+    float forest_level = 0.60;
+    float rock_level   = 0.75; 
+    float snow_level   = 0.80; 
 
-	vec4 snow = vec4(1.0f);
-	vec4 soil = vec4(0.39,0.29,0.0,1.0f);
-	vec4 rock = vec4(0.3, 0.3, 0.3, 1.0f);
-	vec4 water = vec4(0.0,0.53,0.74,1.0f);
-	vec4 grass = vec4(0.13,0.55,0.13,1.0f);
+    // Normalize the current fragment's height to a 0.0 - 1.0 range
+    float frac = (height - minHeight) / (maxHeight - minHeight);
+    vec3 col = deep_water; // Start with the lowest color
 
-	float snow_alt = 0.6;
-	float rock_alt = 0.4;
-	float soil_alt = 0.4;
-	float grass_alt = 0.0;
+    // Blend between colors up the gradient using smoothstep for soft transitions
+    col = mix(col, shallow_water, smoothstep(0.0, water_level, frac));
+    col = mix(col, sand,          smoothstep(water_level, sand_level, frac));
+    col = mix(col, grass,         smoothstep(sand_level, grass_level, frac));
+    col = mix(col, forest,        smoothstep(grass_level, forest_level, frac));
+    col = mix(col, rock,          smoothstep(forest_level, rock_level, frac));
+    col = mix(col, snow,          smoothstep(rock_level, snow_level, frac));
 
-	//determine by altitude
-	if (frac >= snow_alt)
-		col = snow; //snow
-	else if (rock_alt < frac )
-		col = lerp( rock, snow, (frac-rock_alt) / (snow_alt - rock_alt)); //rock
-	else if (soil_alt < frac)
-		col = lerp(soil, rock, (frac - soil_alt) / (rock_alt - soil_alt));
-	else if (frac > grass_alt)
-		col = lerp(grass, rock, (frac - grass_alt) / (rock_alt - grass_alt) );
-	else 
-		col = water;
-
-	//determine by slope
-	float slope_threshold = 0.75;
-	if (frac != 0) {
-		if (param <= slope_threshold)
-			col = lerp(rock, col, 1 - param);
-		else
-			col += 0.1 * lerp(rock, col, (param - slope_threshold) / (1 - slope_threshold));
-	}
+    // Get the steepness of the terrain. 1.0 = flat, 0.0 = vertical cliff.
+    float slope = dot(normalize(Normal), vec3(0.0, 1.0, 0.0));
+    // It will be 0.0 for gentle slopes and 1.0 for steep cliffs.
+    float rock_factor = 1.0 - smoothstep(0.45, 0.75, slope);
+    if (frac > water_level && frac < 0.85) {
+        col = mix(col, rock, rock_factor);
+    }
 
 	  // Blinn-Phong lighting
     vec3 norm = normalize(Normal);
@@ -91,7 +90,7 @@ void main()
 	float depth = linearizeDepth(gl_FragCoord.z) / far;
 
 	if(toggleAtmosphere){
-		float lambda = pow(2.71828, -2.0 * depth);
+		float lambda = pow(2.71828, -0.6 * depth);
 		result = lambda * result + (1 - lambda) * vec4(0.50, 0.50, 0.50, 1.0f);
 	}
 	if (toggleFog){
