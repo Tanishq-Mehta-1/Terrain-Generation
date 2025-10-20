@@ -33,7 +33,7 @@ void main()
     vec2 t1 = (t11 - t10)*u + t10;
     vec2 texCoord = (t1 - t0) * v + t0;
 
-    height = texture(heightMap, texCoord).y * yScale - yShift;
+    height = texture(heightMap, texCoord).r * yScale - yShift;
 
     //corner point's position
 	vec4 p00 = gl_in[0].gl_Position;
@@ -61,7 +61,7 @@ void main()
 	    hL = hR = hD = hU = height;
         float offset = 10.0f;
 
-        ivec2 map_size = textureSize(heightMap, 0);
+        vec2 map_size = textureSize(heightMap, 0);
         vec2 dx = vec2(1.0f / float(map_size.x), 0.0f);
 	    vec2 dy = vec2(0.0f, 1.0f / float(map_size.y));
 

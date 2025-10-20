@@ -17,7 +17,7 @@ class TerrainRenderer {
 public:
 
 	TerrainRenderer(Shader shader, TerrainMesh& tMesh);
-	void RenderTerrain(TerrainMesh& tMesh, glm::vec3 sunCol, glm::vec3 sunDir, const Camera& c, int screenWidth, int screenHeight, int f); 
+	void RenderTerrain(TerrainMesh& tMesh, glm::vec3 sunCol, glm::vec3 sunDir, const Camera& c, int screenWidth, int screenHeight, int f, glm::vec4 bgCol);
 	void setupBuffersTess(std::vector<float>& vertices);
 
 private:
@@ -28,7 +28,7 @@ private:
 	Shader shader;
 
 	void setupSun(glm::vec3 sunCol, glm::vec3 sunDir);
-	void setupUniforms(const Camera& c, int screenWidth, int screenHeight, const TerrainMesh& tMesh, int f);
+	void setupUniforms(const Camera& c, int screenWidth, int screenHeight, const TerrainMesh& tMesh, int f, glm::vec4 bgCol);
 	void drawCallTess(int f, int rez, unsigned int heightmap);
 	void loadVerticesTess(TerrainMesh& tMesh);
 };

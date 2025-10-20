@@ -28,13 +28,13 @@ unsigned int TerrainGenerator::generateHeightmapComp(int mapSize_x, int mapSize_
 	glBindImageTexture(0, imgOut, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
 	perlin.use();
-	perlin.setInt("repeat", 256);
+	perlin.setInt("repeat", 0);
 	perlin.setInt("octaves", octaves);
 	perlin.setFloat("scale", scale); // Increased scale for more visible features
 	perlin.setFloat("persistence", persistence);
 	perlin.setInt("flag", flag);
 	
-	perlin.useCompute(ceil(mapSize_x / 16), ceil(mapSize_z / 16), 1, GL_TEXTURE_FETCH_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	perlin.useCompute(ceil((float)mapSize_x / 16.0f), ceil((float)mapSize_z / 16.0f), 1, GL_TEXTURE_FETCH_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 	std::cout << "Generated Heightmap\n";
 

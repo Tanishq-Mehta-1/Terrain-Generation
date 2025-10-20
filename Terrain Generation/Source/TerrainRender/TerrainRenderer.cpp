@@ -8,9 +8,9 @@ TerrainRenderer::TerrainRenderer(Shader shader, TerrainMesh& tMesh) {
 	setupBuffersTess(tMesh.vertices);
 };
 
-void TerrainRenderer::RenderTerrain(TerrainMesh& tMesh, glm::vec3 sunCol, glm::vec3 sunDir, const Camera& c, int screenWidth, int screenHeight, int f) {
+void TerrainRenderer::RenderTerrain(TerrainMesh& tMesh, glm::vec3 sunCol, glm::vec3 sunDir, const Camera& c, int screenWidth, int screenHeight, int f, glm::vec4 bgCol) {
 	setupSun(sunCol, sunDir);
-	setupUniforms(c, screenWidth, screenHeight, tMesh, f);
+	setupUniforms(c, screenWidth, screenHeight, tMesh, f, bgCol);
 	drawCallTess(f, tMesh.rez, tMesh.heightMap_texture);
 };
 
@@ -48,7 +48,7 @@ void TerrainRenderer::setupSun(glm::vec3 sunCol, glm::vec3 sunDir) {
 	shader.setVec3("dir.direction", sun_dir);
 }
 
-void TerrainRenderer::setupUniforms(const Camera& c, int screenWidth, int screenHeight, const TerrainMesh& tMesh, int f) {
+void TerrainRenderer::setupUniforms(const Camera& c, int screenWidth, int screenHeight, const TerrainMesh& tMesh, int f, glm::vec4 bgCol) {
 
 	shader.use();
 
@@ -67,6 +67,7 @@ void TerrainRenderer::setupUniforms(const Camera& c, int screenWidth, int screen
 	shader.setFloat("maxHeight", tMesh.yScale - tMesh.yShift);
 	shader.setBool("toggleFog", (f & FOG));
 	shader.setBool("toggleAtmosphere", (f & ATMOSHPHERE));
+	shader.setVec4("bgCol", bgCol);
 	shader.setVec3("viewPos", c.Position);
 }
 
@@ -93,8 +94,8 @@ void TerrainRenderer::loadVerticesTess(TerrainMesh& tMesh) {
 
 	tMesh.vertices.reserve(rez * rez * 4);
 
-	for (int i = 0; i < rez; i++) {
-		for (int j = 0; j < rez; j++) {
+	for (int i = 0; i <= rez; i++) {
+		for (int j = 0; j <= rez-1; j++) {
 
 			tMesh.vertices.push_back(-mapSize_x / 2.0f + mapSize_x * i / rez); // v.x
 			tMesh.vertices.push_back(0.0f); // v.y

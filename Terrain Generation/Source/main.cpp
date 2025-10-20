@@ -116,19 +116,18 @@ int main()
 	//use dw with low yScale and persistence
 
 	// 1024, p0.45, s256.0f, o16, scale 1024, shift 512 nice valley
-
-	//scale = 2000, shift = 1000, rez = 50, mapsize = 6000 x 6000, p0.45, s0.00097, o16
+	// scale = 2000, shift = 1000, rez = 50, mapsize = 6000 x 6000, p0.45, s0.00097, o16
 
 	float yScale = 1000, yShift = 500; //range from -256 to 256
-	float seaLevel = -yShift;
-	float rez = 50;
+	float seaLevel = -yShift - 1500.0f;
+	float rez = 40;
 
 	auto start = std::chrono::high_resolution_clock::now();
 	TerrainMesh tMesh(yScale, yShift, seaLevel, rez);
 	TerrainGenerator tGen;
 	
 	//generate the map
-	int mapSize_x = 3000, mapSize_z = 3000; 
+	int mapSize_x = 6000, mapSize_z = 6000; 
 	double persistence = 0.45f, scale = 0.00097;//keep scale v small
 	int octaves = 16;
 
@@ -161,12 +160,12 @@ int main()
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		objectShader.use();
 
-		glm::vec3 bgCol = glm::vec3(0.529, 0.808, 0.922);
+		glm::vec4 bgCol = glm::vec4(0.529, 0.808, 0.922, 1.0f);
 		glClearColor(bgCol.x, bgCol.y, bgCol.z, 1.0);
 		glEnable(GL_DEPTH_TEST);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		tRen.RenderTerrain(tMesh, sun_color, sun_dir, camera, screenWidth, screenHeight, handleToggle(toggleAtmosphere, toggleFog, toggleWireframe));
+		tRen.RenderTerrain(tMesh, sun_color, sun_dir, camera, screenWidth, screenHeight, handleToggle(toggleAtmosphere, toggleFog, toggleWireframe), bgCol);
 
 		//second pass
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);

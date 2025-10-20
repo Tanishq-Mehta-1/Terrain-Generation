@@ -6,6 +6,7 @@ in vec3 FragPos;
 
 uniform float minHeight, maxHeight;
 uniform vec3 viewPos;
+uniform vec4 bgCol;
 uniform bool toggleFog;
 uniform bool toggleAtmosphere;
 
@@ -75,7 +76,7 @@ void main()
     float slope = dot(normalize(Normal), vec3(0.0, 1.0, 0.0));
     // It will be 0.0 for gentle slopes and 1.0 for steep cliffs.
     float rock_factor = 1.0 - smoothstep(0.45, 0.75, slope);
-    if (frac > water_level && frac < 0.85) {
+    if (frac > water_level) {
         col = mix(col, rock, rock_factor);
     }
 
@@ -91,7 +92,7 @@ void main()
 
 	if(toggleAtmosphere){
 		float lambda = pow(2.71828, -0.6 * depth);
-		result = lambda * result + (1 - lambda) * vec4(0.50, 0.50, 0.50, 1.0f);
+		result = lambda * result + (1 - lambda) * bgCol;
 	}
 	if (toggleFog){
 		vec4 depthVec4 = vec4(vec3(pow(depth, 0.9)), 1.0);

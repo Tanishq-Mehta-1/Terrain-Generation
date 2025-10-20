@@ -147,7 +147,7 @@ void main(){
 	ivec2 size = imageSize(imgOut);
 	if (globalCoord.x >= size.x || globalCoord.y >= size.y) return;
 
-	vec2 uv = vec2(globalCoord) * scale;
+	vec2 uv = vec2(globalCoord) * scale ;
 
 	float pixel_val;
 	if (flag == 0)
@@ -158,6 +158,7 @@ void main(){
 		pixel_val = DW_Perlin(uv);
 
 	vec4 value = vec4(pixel_val, pixel_val, pixel_val, 1.0f);
+	//value = vec4(uv, 1.0f, 1.0f);
 	
 	imageStore(imgOut, globalCoord, value);
 }
