@@ -74,6 +74,10 @@
     <IncludePath>C:\Users\tanis\source\repos\Terrain Generation\Terrain Generation\Vendors</IncludePath>
     <LibraryPath>C:\Users\tanis\source\repos\Terrain Generation\Terrain Generation\Libs;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>C:\Users\tanis\source\repos\Terrain Generation\Terrain Generation\Vendors;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\tanis\source\repos\Terrain Generation\Terrain Generation\Libs;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -125,6 +129,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>opengl32.lib;glfw3.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -143,10 +148,13 @@
     <None Include="Shaders\tess.vert" />
     <None Include="Shaders\tess_tcs.glsl" />
     <None Include="Shaders\tess_tes.glsl" />
+    <None Include="Source\TerrainGenerator\fluvial.comp" />
     <None Include="Source\TerrainGenerator\perlin.comp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Erosion_Uniforms.h" />
     <ClInclude Include="Source\Headers\framebuffer.h" />
+    <ClInclude Include="Source\Headers\Image_2D.h" />
     <ClInclude Include="Source\TerrainGenerator\perlin.h" />
     <ClInclude Include="Source\TerrainGenerator\TerrainGenerator.h" />
     <ClInclude Include="Source\TerrainMesh.h" />

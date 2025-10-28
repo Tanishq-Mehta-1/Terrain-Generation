@@ -157,7 +157,7 @@ void main(){
 	else if (flag == 2)
 		pixel_val = DW_Perlin(uv);
 
-	vec4 value = vec4(pixel_val, pixel_val, pixel_val, 1.0f);
+	vec4 value = vec4(pixel_val, 0.0f, 0.0f, 1.0f);
 	//value = vec4(uv, 1.0f, 1.0f);
 	
 	imageStore(imgOut, globalCoord, value);

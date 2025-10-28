@@ -13,8 +13,8 @@ void main()
 	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
 	TextureCoord[gl_InvocationID] = TexCoord[gl_InvocationID];
 
-    int MIN_TESS_LEVEL = 40;
-    int MAX_TESS_LEVEL = 64;
+    int MIN_TESS_LEVEL = 20;
+    int MAX_TESS_LEVEL = 30;
     float MIN_DISTANCE = 100.0f;
     float MAX_DISTANCE = 2000.0f;
 
@@ -37,13 +37,17 @@ void main()
 
 	if (gl_InvocationID == 0)
     {
-        gl_TessLevelOuter[0] = tessLeft;
-        gl_TessLevelOuter[1] = tessDown;
-        gl_TessLevelOuter[2] = tessRight;
-        gl_TessLevelOuter[3] = tessUp;
+       
+        // CORRECT MAPPING
+        gl_TessLevelOuter[0] = tessDown;
+        gl_TessLevelOuter[1] = tessRight;
+        gl_TessLevelOuter[2] = tessUp;
+        gl_TessLevelOuter[3] = tessLeft;
 
+        // This logic is correct
         gl_TessLevelInner[0] = max(tessUp, tessDown);
         gl_TessLevelInner[1] = max(tessRight, tessLeft);
+
     }
 
 

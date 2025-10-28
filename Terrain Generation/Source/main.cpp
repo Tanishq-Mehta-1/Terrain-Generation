@@ -1,9 +1,9 @@
-﻿#include <stb_image_write.h>
-#include <stb_image.h>
+﻿#include <stb_image.h>
 
 #include "TerrainGenerator/TerrainGenerator.h"
 #include "TerrainMesh.h"
 #include "TerrainRender/TerrainRenderer.h"
+#include "Erosion_Uniforms.h"
 
 #include <camera.h>
 #include <GLFW/glfw3.h>
@@ -118,22 +118,36 @@ int main()
 	// 1024, p0.45, s256.0f, o16, scale 1024, shift 512 nice valley
 	// scale = 2000, shift = 1000, rez = 50, mapsize = 6000 x 6000, p0.45, s0.00097, o16
 
-	float yScale = 1000, yShift = 500; //range from -256 to 256
-	float seaLevel = -yShift - 1500.0f;
-	float rez = 40;
+	float yScale = 1000, yShift = 500;
+	float seaLevel = -yShift ;
+	float rez = 20;
 
 	auto start = std::chrono::high_resolution_clock::now();
+
 	TerrainMesh tMesh(yScale, yShift, seaLevel, rez);
 	TerrainGenerator tGen;
-	
+
+	//Setting Erosion Conditions
+	Erosion_Uniforms erosion_uniforms;
+	erosion_uniforms.dt = 0.0001;
+	erosion_uniforms.K_rain = 0.1f;
+	erosion_uniforms.flux_pipe_cross_section = 1.0f;
+	erosion_uniforms.flux_pipe_length = 1.0f;
+	erosion_uniforms.K_gravity = 0.01f;
+	erosion_uniforms.K_capacity = 0.5f;
+	erosion_uniforms.K_dissolving = 0.5f;
+	erosion_uniforms.K_deposition = 0.5f;
+	erosion_uniforms.K_evaporation = 0.4f;
+
 	//generate the map
-	int mapSize_x = 6000, mapSize_z = 6000; 
+	int mapSize_x = 500, mapSize_z = 500; 
 	double persistence = 0.45f, scale = 0.00097;//keep scale v small
-	int octaves = 16;
+	int octaves = 8;
+	int erosion_iterations = 1000; //the simulation isnt eroding after 1 iteration!!!!!!!!!!!
 
 	//tMesh.map_dimensions = tGen.generateHeightmap(mapSize_x, mapSize_z, persistence, scale, octaves, FBM, write_to_file, tMesh.data);
 	tMesh.map_dimensions = { mapSize_x, mapSize_z };
-	tMesh.heightMap_texture = tGen.generateHeightmapComp(mapSize_x, mapSize_z, persistence, scale, octaves, FBM);
+	tMesh.heightMap_texture = tGen.generateHeightmapComp(mapSize_x, mapSize_z, persistence, scale, octaves, erosion_iterations, FBM, erosion_uniforms);
 
 	//initialise Terrain Renderer after data has been generated
 	TerrainRenderer tRen(objectShader, tMesh);

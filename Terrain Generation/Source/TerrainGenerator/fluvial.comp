@@ -1,0 +1,172 @@
+#version 460 core
+
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+layout(rgba32f, binding = 0) uniform image2D readonly HeightMap_R;  //terr_height water_height sediment_height 1.0f
+layout(rgba32f, binding = 1) uniform image2D writeonly HeightMap_W;  //terr_height water_height sediment_height 1.0f
+layout(rgba32f, binding = 2) uniform image2D readonly OutfluxMap_R; //fL fT fR fB
+layout(rgba32f, binding = 3) uniform image2D writeonly OutfluxMap_W; //fL fT fR fB
+layout(rgba32f, binding = 4) uniform image2D readonly VelocityField_R; //u v 1.0f 1.0f
+layout(rgba32f, binding = 5) uniform image2D writeonly VelocityField_W; //u v 1.0f 1.0f
+
+//Erosion constants
+uniform float dt; 
+uniform float K_rain; 
+uniform float flux_pipe_cross_section;
+uniform float flux_pipe_length;
+uniform float K_gravity;
+uniform float K_capacity; 
+uniform float K_dissolving; 
+uniform float K_deposition; 
+uniform float K_evaporation; 
+
+void incrementWater(inout vec4 heights);
+void update_Outflux(inout vec4 outflux, in vec4 height, in float lx, in float ly, vec4 height_left, vec4 height_right, vec4 heightT, vec4 height_bottom);
+void update_WaterHeight(inout vec4 height, inout float d_avg, in vec4 outflux, in vec4 influx, in float lx, in float ly);
+void update_VelocityField(inout vec4 velocity, in vec4 influx, in vec4 outflux, in float d_avg, in float lx, in float ly);
+vec4 loadHeight(ivec2 coord, ivec2 size);
+vec4 loadInflux(ivec2 coord, ivec2 size);
+void erode_map(inout vec4 height, in vec4 velocity, in vec4 heightL, in vec4 heightT, in vec4 heightR, in vec4 heightB);
+
+void main()
+{
+	ivec2 globalCoord = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 size = imageSize(HeightMap_R);
+
+	//dimensions of a cell
+	float lx = 1.0f / size.x; 
+	float ly = 1.0f / size.y;
+
+	if (globalCoord.x >= size.x || globalCoord.y >= size.y)
+		return;
+
+	vec4 height_xy = imageLoad(HeightMap_R, globalCoord);
+	vec4 outflux_xy = imageLoad(OutfluxMap_R, globalCoord);
+	vec4 velocity_xy = imageLoad(VelocityField_R, globalCoord);
+
+	//fetch neighbour cell heights and influx (boundary conditions handled)
+	vec4 heightL = loadHeight(globalCoord - ivec2(1,0), size);
+	vec4 heightR = loadHeight(globalCoord + ivec2(1,0), size);
+	vec4 heightT = loadHeight(globalCoord + ivec2(0,1), size);
+	vec4 heightB = loadHeight(globalCoord - ivec2(0,1), size);
+
+	float influxL = loadInflux(globalCoord - ivec2(1,0), size).z;
+	float influxR = loadInflux(globalCoord + ivec2(1,0), size).x;
+	float influxT = loadInflux(globalCoord + ivec2(0,1), size).w;
+	float influxB = loadInflux(globalCoord - ivec2(0,1), size).y;
+	vec4 influx_xy = vec4(influxL, influxT, influxR, influxB);
+
+	//increase water height 
+	incrementWater(height_xy);
+	float d_avg = height_xy.y;
+
+	//update velocity field and water surface from OutfluxMap
+	update_Outflux(outflux_xy, height_xy, lx, ly, heightL, heightR, heightT, heightB);
+	update_WaterHeight(height_xy, d_avg, outflux_xy, influx_xy, lx, ly);
+	update_VelocityField(velocity_xy, influx_xy, outflux_xy, d_avg, lx, ly); 
+
+	//calculate erosion & deposition
+	erode_map(height_xy, velocity_xy, heightL, heightT, heightR, heightB);
+
+	//calculate sediment transport
+	ivec2 past_coord = globalCoord - ivec2(velocity_xy.xy);
+	if (past_coord.x >= size.x || past_coord.y >= size.y || past_coord.x < 0 || past_coord.y < 0)
+	{
+		//sample neighbours
+		height_xy.z = (heightL.z + heightR.z + heightT.z + heightB.z) / 4.0f;
+	} else {
+		height_xy.z = imageLoad(HeightMap_R, past_coord).z;
+	}
+	
+	//evaporate some water
+	height_xy.y = height_xy.y * (1 - K_evaporation * dt);
+
+	imageStore(HeightMap_W, globalCoord, height_xy);
+	imageStore(OutfluxMap_W, globalCoord, outflux_xy);
+	imageStore(VelocityField_W, globalCoord, velocity_xy);
+}
+
+vec4 loadHeight(ivec2 coord, ivec2 size)
+{
+	coord = clamp(coord, ivec2(0), size-1);
+	return imageLoad(HeightMap_R, coord);
+}
+
+vec4 loadInflux(ivec2 coord, ivec2 size)
+{
+	if (coord.x < 0 || coord.y < 0 || coord.x >= size.x || coord.y >= size.y)
+		return vec4(0.0f);
+	else
+		return imageLoad(OutfluxMap_R, coord);
+}
+
+void incrementWater(inout vec4 heights)
+{
+	//calculate incoming water at xy
+	heights.y += dt * K_rain;
+}
+
+void update_Outflux(inout vec4 outflux, in vec4 height, in float lx, in float ly, vec4 heightL, vec4 heightR, vec4 heightT, vec4 heightB)
+{
+
+	float cell_height = height.x + height.y;
+	float hL = cell_height - heightL.x - heightL.y;
+	float hR = cell_height - heightR.x - heightR.y;
+	float hT = cell_height - heightT.x - heightT.y;
+	float hB = cell_height - heightB.x - heightB.y;
+
+	float calc_const = dt * (flux_pipe_cross_section * K_gravity) / flux_pipe_length;
+	outflux += calc_const * vec4(hL, hT, hR, hB);
+
+	float outflux_sum = max(outflux.x, 0.0f) + max(outflux.y, 0.0f) + max(outflux.z, 0.0f) + max(outflux.w, 0.0f);  
+	float volume_outflux_ratio = (height.y * lx * ly) / (dt * (outflux_sum + 1e-8));
+	float K = min(1.0f, volume_outflux_ratio);
+
+	outflux *= K;
+}
+
+void update_WaterHeight(inout vec4 height, inout float d_avg, in vec4 outflux, in vec4 influx, in float lx, in float ly)
+{
+	float dV = dt * (influx.x + influx.y + influx.z + influx.w - outflux.x - outflux.y - outflux.z - outflux.w);
+	float temp = height.y;
+	
+	height.y += dV / (lx * ly); 
+	d_avg = (height.y + temp)/2.0f;
+}
+
+void update_VelocityField(inout vec4 velocity, in vec4 influx, in vec4 outflux, in float d_avg, in float lx, in float ly)
+{
+	
+	float Wx = (influx.x - outflux.x + influx.z - outflux.z) * 0.5f;
+	float Wy = (influx.y - outflux.y + influx.w - outflux.w) * 0.5f;
+
+//float Wx = (influx.x - outflux.z) * 0.5;
+//float Wy = (influx.y - outflux.w) * 0.5;
+
+	velocity.x = Wx / (d_avg * ly + 1e-8);
+	velocity.y = Wy / (d_avg * lx + 1e-8);
+
+	velocity.x = clamp(velocity.x, -lx/dt, lx/dt);
+	velocity.y = clamp(velocity.y, -ly/dt, ly/dt);
+}
+
+void erode_map(inout vec4 height, in vec4 velocity, in vec4 heightL, in vec4 heightT, in vec4 heightR, in vec4 heightB)
+{
+	
+	float dh_dx = (heightR.x - heightL.x) / 2.0f;
+	float dh_dy = (heightT.x - heightB.x) / 2.0f;
+	float A = dh_dx * dh_dx + dh_dy * dh_dy;
+
+	float force_along_slope = max(0.001f, sqrt( A / (1.0f + A)));
+
+	float Capacity = K_capacity * force_along_slope * length(velocity);
+	
+	float diff = height.z - Capacity;
+	float erode = max(-diff, 0.0f);
+	float deposit = max(diff, 0.0f);
+
+	float to_erode = K_dissolving * erode;
+	float to_deposit = K_deposition * deposit;
+
+	height.x = height.x - to_erode + to_deposit;
+	height.z = height.z + to_erode - to_deposit;
+}

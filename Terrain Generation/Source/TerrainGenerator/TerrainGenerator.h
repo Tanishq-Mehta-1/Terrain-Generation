@@ -1,6 +1,7 @@
 #ifndef TERRAIN_GENERATOR_H
 #define TERRAIN_GENERATOR_H
 
+#include "../Erosion_Uniforms.h"
 #include <iostream>
 #include <fstream>
 
@@ -19,7 +20,8 @@ class TerrainGenerator {
 public:
 
 	TerrainGenerator();
-	unsigned int generateHeightmapComp(int mapSize_x, int mapSize_z, double persistence, double scale, int octaves, GenerationFlags flag);
+	unsigned int generateHeightmapComp(int mapSize_x, int mapSize_z, double persistence, double scale, int octaves, int iterations, GenerationFlags flag, Erosion_Uniforms eu);
+	unsigned int fluvialErosion(Erosion_Uniforms eu, unsigned int heightmap, int mapSize_x, int mapSize_z, int iterations);
 
 };
 

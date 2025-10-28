@@ -18,7 +18,6 @@ out vec3 FragPos;
 
 void main()
 {
-
     //current vertex uv
 	float u = gl_TessCoord.x;
 	float v = gl_TessCoord.y;
@@ -33,7 +32,8 @@ void main()
     vec2 t1 = (t11 - t10)*u + t10;
     vec2 texCoord = (t1 - t0) * v + t0;
 
-    height = texture(heightMap, texCoord).r * yScale - yShift;
+    vec4 sampled_point = texture(heightMap, texCoord);
+    height = (sampled_point.x )* yScale - yShift;
 
     //corner point's position
 	vec4 p00 = gl_in[0].gl_Position;

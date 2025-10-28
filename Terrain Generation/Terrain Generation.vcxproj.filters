@@ -54,6 +54,7 @@
     <None Include="Shaders\tess.vert" />
     <None Include="Shaders\tess_tcs.glsl" />
     <None Include="Shaders\tess_tes.glsl" />
+    <None Include="Source\TerrainGenerator\fluvial.comp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Vendors\camera.h">
@@ -84,6 +85,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\TerrainMesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Erosion_Uniforms.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Headers\Image_2D.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
