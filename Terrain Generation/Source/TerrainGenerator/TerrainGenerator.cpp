@@ -73,7 +73,7 @@ unsigned int TerrainGenerator::fluvialErosion(Erosion_Uniforms eu, unsigned int 
 	eroder.setInt("p_max_iteration", eu.p_max_iteration);
 	glBindImageTexture(0, heightmap, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
-	eroder.useCompute(mapSize_x / 16, ceil(mapSize_z / 16), 1, GL_TEXTURE_FETCH_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	eroder.useCompute(ceil(mapSize_x / 16), ceil(mapSize_z /16), 1, GL_TEXTURE_FETCH_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 	return heightmap;
 }

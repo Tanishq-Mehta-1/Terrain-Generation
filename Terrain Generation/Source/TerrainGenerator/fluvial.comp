@@ -39,13 +39,19 @@ float getHeight(vec2 pos, ivec2 size) {
   if (!validCoord(pos, size))
     return 0.0f;
 
-  vec2 uv = pos - xy;
+  float u = (pos - xy).x;
+  float v = (pos - xy).y;
+
   float p_xy = safeImageLoad(xy, size).x;
   float p_xy1 = safeImageLoad(xy + ivec2(0, 1), size).x;
   float p_x1y = safeImageLoad(xy + ivec2(1, 0), size).x;
   float p_x1y1 = safeImageLoad(xy + ivec2(1, 1), size).x;
 
-  return mix(mix(p_xy, p_x1y, uv.x), mix(p_xy1, p_x1y1, uv.x), uv.y);
+  return 
+  p_x1y1 * u * v + 
+  p_x1y * u * (1 - v) + 
+  p_xy1 * (1 - u) * v + 
+  p_xy * (1 - u) * (1 - v);
 }
 
 vec2 getGradient(vec2 pos, ivec2 size) {
@@ -153,8 +159,8 @@ void depositTerrain(vec2 pos, ivec2 size, float amount) {
 
 void main() {
 
-  ivec2 globalCoord = ivec2(gl_GlobalInvocationID.xy);
   ivec2 size = imageSize(heightMap);
+  ivec2 globalCoord = ivec2(gl_GlobalInvocationID.xy);
 
   water_drop drop;
   drop.pos = vec2(gl_GlobalInvocationID.xy);
@@ -185,7 +191,7 @@ void main() {
     // deposit or erode
     float s_diff = drop.sediment - capacity;
     if (s_diff > 0.0f) {
-      float amount = s_diff * p_deposition;
+      float amount =  s_diff * p_deposition;
       drop.sediment -= amount;
       depositTerrain(drop.pos, size, amount);
     } else {
@@ -198,8 +204,5 @@ void main() {
     drop.water = drop.water * (1 - p_evaporation);
     drop.pos = pos_new;
     drop.dir = dir_new;
-
-    if (drop.water <= 0.01 || drop.speed <= 0.01)
-      break;
   }
 }

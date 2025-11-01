@@ -119,9 +119,9 @@ int main()
 	// 1024, p0.45, s256.0f, o16, scale 1024, shift 512 nice valley
 	// scale = 2000, shift = 1000, rez = 50, mapsize = 6000 x 6000, p0.45, s0.00097, o16
 
-	float yScale = 256, yShift = 0;
-	float seaLevel = -yShift ;
-	float rez = 40;
+	float yScale = 2000, yShift = yScale/2;
+	float seaLevel = -yShift - 1500.0f ;
+	float rez = 50;
 
 	auto start = std::chrono::high_resolution_clock::now();
 
@@ -130,19 +130,19 @@ int main()
 
 	//Setting Erosion Conditions
 	Erosion_Uniforms erosion_uniforms;
-	erosion_uniforms.p_inertia = 0.4f;      // resistance to direction change
-	erosion_uniforms.p_min_slope = 0.000f;     // minimal slope threshold
-	erosion_uniforms.p_capacity = 1.0f;     // sediment capacity multiplier
-	erosion_uniforms.p_deposition = 0.2f;      // deposition rate
-	erosion_uniforms.p_erosion = 0.7f;      // erosion rate
-	erosion_uniforms.p_gravity = 5.0f;      // gravity factor
-	erosion_uniforms.p_evaporation = 0.02f;   // evaporation per step
-	erosion_uniforms.p_radius = 2.0f;      // erosion radius
-	erosion_uniforms.p_max_iteration = 64;       // maximum iterations per droplet
+	erosion_uniforms.p_inertia = 0.05f;      // resistance to direction change
+	erosion_uniforms.p_min_slope = 0.0001f;     //decides the minimum capacity of the drop
+	erosion_uniforms.p_capacity = 8.0f;     //higher capacity = higher erosion | doesnt conserve soil
+	erosion_uniforms.p_deposition = 0.1f;      //keep small and lower than erosion | high dep causes hills to form
+	erosion_uniforms.p_erosion = 0.7f;      
+	erosion_uniforms.p_gravity = 1.0f;      
+	erosion_uniforms.p_evaporation = 0.05f;   // higher evaporation helps retain original terrain
+	erosion_uniforms.p_radius = 5.0f;      // need bigger radius for bigger scales
+	erosion_uniforms.p_max_iteration = 70;       // maximum iterations per droplet
 
 	//generate the map
-	int mapSize_x = 500, mapSize_z = 500; 
-	double persistence = 0.45f, scale = 0.0047;//keep scale v small
+	int mapSize_x = 2000, mapSize_z = 2000; 
+	double persistence = 0.45f, scale = 0.00097;//keep scale v small
 	int octaves = 16;
 
 	//tMesh.map_dimensions = tGen.generateHeightmap(mapSize_x, mapSize_z, persistence, scale, octaves, FBM, write_to_file, tMesh.data);
