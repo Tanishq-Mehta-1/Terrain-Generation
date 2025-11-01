@@ -20,8 +20,9 @@ class TerrainGenerator {
 public:
 
 	TerrainGenerator();
-	unsigned int generateHeightmapComp(int mapSize_x, int mapSize_z, double persistence, double scale, int octaves, int iterations, GenerationFlags flag, Erosion_Uniforms eu);
-	unsigned int fluvialErosion(Erosion_Uniforms eu, unsigned int heightmap, int mapSize_x, int mapSize_z, int iterations);
+	unsigned int generateHeightmapComp(int mapSize_x, int mapSize_z, double persistence, double scale, int octaves, GenerationFlags flag, Erosion_Uniforms eu);
+	unsigned int generateHeightmapComp(int mapSize_x, int mapSize_z, double persistence, double scale, int octaves, GenerationFlags flag);
+	unsigned int fluvialErosion(Erosion_Uniforms eu, unsigned int heightmap, int mapSize_x, int mapSize_z);
 
 };
 

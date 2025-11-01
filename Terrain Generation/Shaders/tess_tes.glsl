@@ -1,6 +1,6 @@
 #version 460 core
 
-layout (quads, fractional_even_spacing, ccw) in;
+layout (quads, fractional_odd_spacing, ccw) in;
 
 in vec2 TextureCoord[];
 

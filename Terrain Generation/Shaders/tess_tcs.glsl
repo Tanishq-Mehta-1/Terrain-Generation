@@ -13,8 +13,8 @@ void main()
 	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
 	TextureCoord[gl_InvocationID] = TexCoord[gl_InvocationID];
 
-    int MIN_TESS_LEVEL = 20;
-    int MAX_TESS_LEVEL = 30;
+    int MIN_TESS_LEVEL = 40;
+    int MAX_TESS_LEVEL = 60;
     float MIN_DISTANCE = 100.0f;
     float MAX_DISTANCE = 2000.0f;
 

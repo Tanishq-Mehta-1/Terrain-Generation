@@ -42,6 +42,7 @@ bool firstMouse{ true };
 bool toggleWireframe{ false };
 bool toggleAtmosphere{ false };
 bool toggleFog{ false };
+bool toggleErosion{ true };
 
 constexpr bool write_to_file{ true };
 constexpr bool load_from_image{ false };
@@ -118,9 +119,9 @@ int main()
 	// 1024, p0.45, s256.0f, o16, scale 1024, shift 512 nice valley
 	// scale = 2000, shift = 1000, rez = 50, mapsize = 6000 x 6000, p0.45, s0.00097, o16
 
-	float yScale = 1000, yShift = 500;
+	float yScale = 256, yShift = 0;
 	float seaLevel = -yShift ;
-	float rez = 20;
+	float rez = 40;
 
 	auto start = std::chrono::high_resolution_clock::now();
 
@@ -129,25 +130,25 @@ int main()
 
 	//Setting Erosion Conditions
 	Erosion_Uniforms erosion_uniforms;
-	erosion_uniforms.dt = 0.0001;
-	erosion_uniforms.K_rain = 0.1f;
-	erosion_uniforms.flux_pipe_cross_section = 1.0f;
-	erosion_uniforms.flux_pipe_length = 1.0f;
-	erosion_uniforms.K_gravity = 0.01f;
-	erosion_uniforms.K_capacity = 0.5f;
-	erosion_uniforms.K_dissolving = 0.5f;
-	erosion_uniforms.K_deposition = 0.5f;
-	erosion_uniforms.K_evaporation = 0.4f;
+	erosion_uniforms.p_inertia = 0.4f;      // resistance to direction change
+	erosion_uniforms.p_min_slope = 0.000f;     // minimal slope threshold
+	erosion_uniforms.p_capacity = 1.0f;     // sediment capacity multiplier
+	erosion_uniforms.p_deposition = 0.2f;      // deposition rate
+	erosion_uniforms.p_erosion = 0.7f;      // erosion rate
+	erosion_uniforms.p_gravity = 5.0f;      // gravity factor
+	erosion_uniforms.p_evaporation = 0.02f;   // evaporation per step
+	erosion_uniforms.p_radius = 2.0f;      // erosion radius
+	erosion_uniforms.p_max_iteration = 64;       // maximum iterations per droplet
 
 	//generate the map
 	int mapSize_x = 500, mapSize_z = 500; 
-	double persistence = 0.45f, scale = 0.00097;//keep scale v small
-	int octaves = 8;
-	int erosion_iterations = 1000; //the simulation isnt eroding after 1 iteration!!!!!!!!!!!
+	double persistence = 0.45f, scale = 0.0047;//keep scale v small
+	int octaves = 16;
 
 	//tMesh.map_dimensions = tGen.generateHeightmap(mapSize_x, mapSize_z, persistence, scale, octaves, FBM, write_to_file, tMesh.data);
 	tMesh.map_dimensions = { mapSize_x, mapSize_z };
-	tMesh.heightMap_texture = tGen.generateHeightmapComp(mapSize_x, mapSize_z, persistence, scale, octaves, erosion_iterations, FBM, erosion_uniforms);
+	unsigned int eroded = tGen.generateHeightmapComp(mapSize_x, mapSize_z, persistence, scale, octaves, FBM, erosion_uniforms);
+	unsigned int uneroded = tGen.generateHeightmapComp(mapSize_x, mapSize_z, persistence, scale, octaves, FBM);
 
 	//initialise Terrain Renderer after data has been generated
 	TerrainRenderer tRen(objectShader, tMesh);
@@ -177,9 +178,13 @@ int main()
 		glm::vec4 bgCol = glm::vec4(0.529, 0.808, 0.922, 1.0f);
 		glClearColor(bgCol.x, bgCol.y, bgCol.z, 1.0);
 		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_FRONT);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		tMesh.heightMap_texture = (!toggleErosion) ? uneroded : eroded;
 		tRen.RenderTerrain(tMesh, sun_color, sun_dir, camera, screenWidth, screenHeight, handleToggle(toggleAtmosphere, toggleFog, toggleWireframe), bgCol);
+		glDisable(GL_CULL_FACE);
 
 		//second pass
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -311,6 +316,7 @@ void processInput(GLFWwindow* window)
 	toggle_mode(window, GLFW_KEY_T, toggleWireframe);
 	toggle_mode(window, GLFW_KEY_F, toggleFog);
 	toggle_mode(window, GLFW_KEY_G, toggleAtmosphere);
+	toggle_mode(window, GLFW_KEY_E, toggleErosion);
 
 	//camera controls
 	const float cameraSpeed = 5.0f * deltaTime;
