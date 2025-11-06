@@ -72,13 +72,13 @@ void main()
     col = mix(col, rock,          smoothstep(forest_level, rock_level, frac));
     col = mix(col, snow,          smoothstep(rock_level, snow_level, frac));
 
-//    // Get the steepness of the terrain. 1.0 = flat, 0.0 = vertical cliff.
-//    float slope = dot(normalize(Normal), vec3(0.0, 1.0, 0.0));
-//    // It will be 0.0 for gentle slopes and 1.0 for steep cliffs.
-//    float rock_factor = 1.0 - smoothstep(0.45, 0.75, slope);
-//    if (frac > water_level) {
-//        col = mix(col, rock, rock_factor);
-//    }
+    // Get the steepness of the terrain. 1.0 = flat, 0.0 = vertical cliff.
+    float slope = dot(normalize(Normal), vec3(0.0, 1.0, 0.0));
+    // It will be 0.0 for gentle slopes and 1.0 for steep cliffs.
+    float rock_factor = 1.0 - smoothstep(0.45, 0.75, slope);
+    if (frac > water_level) {
+        col = mix(col, rock, rock_factor);
+    }
 
 	  // Blinn-Phong lighting
     vec3 norm = normalize(Normal);
@@ -100,7 +100,7 @@ void main()
 	}
 
 	//gamma correction
-	//result = pow(result, vec4(1.0f/2.2f));
+	result = pow(result, vec4(1.0f/2.2f));
 
 	FragColor = result;
 }

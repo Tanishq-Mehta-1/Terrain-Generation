@@ -14,7 +14,7 @@ public:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, internal_format, size_x, size_y, 0, GL_RGBA, GL_FLOAT, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, internal_format, size_x, size_y, 0, GL_RGBA, GL_FLOAT, nullptr);
 		glBindImageTexture(unit_to_bind, this->id, 0, GL_FALSE, 0, image_access, GL_RGBA32F);
 	}
 

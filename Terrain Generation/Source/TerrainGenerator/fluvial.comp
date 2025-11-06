@@ -190,13 +190,16 @@ void main() {
 
     // deposit or erode
     float s_diff = drop.sediment - capacity;
-    if (s_diff > 0.0f) {
-      float amount =  s_diff * p_deposition;
-      drop.sediment -= amount;
-      depositTerrain(drop.pos, size, amount);
+
+    if (s_diff > 0.0f || height_diff >= 0.0f) {
+
+      float amount_deposit =  height_diff >= 0.0f ? min(height_diff, drop.sediment) : s_diff * p_deposition;
+      drop.sediment -= amount_deposit;
+      depositTerrain(drop.pos, size, amount_deposit);
+
     } else {
-      float amount = min( -s_diff * p_erosion, -height_diff);
-      drop.sediment += erodeTerrain(drop.pos, size, amount);
+      float amount_eroded = min( -s_diff * p_erosion, -height_diff);
+      drop.sediment += erodeTerrain(drop.pos, size, amount_eroded);
     }
 
     // update other states
