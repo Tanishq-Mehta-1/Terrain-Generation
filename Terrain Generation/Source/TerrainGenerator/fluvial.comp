@@ -157,13 +157,23 @@ void depositTerrain(vec2 pos, ivec2 size, float amount) {
                imageLoad(heightMap, x1y1) + vec4(amount * w11, 0, 0, 0));
 }
 
+float rand(vec2 xy, float seed){
+    return fract(tan(distance(xy * 1.61803398874989484820459, xy) * seed) * xy.x);
+}
+
 void main() {
 
   ivec2 size = imageSize(heightMap);
   ivec2 globalCoord = ivec2(gl_GlobalInvocationID.xy);
 
+  if (rand(globalCoord, 1292.021f) <= 0.7)
+    return;
+
+  float posx = globalCoord.x + rand(globalCoord, 1.0f);
+  float posy = globalCoord.y + rand(globalCoord, 2.0f);
+
   water_drop drop;
-  drop.pos = vec2(gl_GlobalInvocationID.xy);
+  drop.pos = vec2(posx - 0.5 , posy - 0.5);
   drop.dir = vec2(0.0, 0.0);
   drop.water = 1.0;
   drop.speed = 1.0;
@@ -173,6 +183,9 @@ void main() {
 
     if (!validCoord(drop.pos, size))
       return;
+
+    if (drop.speed <= 0.01 || drop.water <= 0.01)
+        return;
 
     // calculate gradient of point
     vec2 grad = getGradient(drop.pos, size);

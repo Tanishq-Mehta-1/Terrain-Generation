@@ -33,7 +33,7 @@ void main()
     vec2 texCoord = (t1 - t0) * v + t0;
 
     vec4 sampled_point = texture(heightMap, texCoord);
-    height = (sampled_point.x )* yScale - yShift;
+    height =  sampled_point.x * yScale - yShift;
 
     //corner point's position
 	vec4 p00 = gl_in[0].gl_Position;

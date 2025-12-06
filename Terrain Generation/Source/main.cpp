@@ -130,14 +130,14 @@ int main()
 
 	//Setting Erosion Conditions
 	Erosion_Uniforms erosion_uniforms;
-	erosion_uniforms.p_inertia = 0.01f;      // resistance to direction change
-	erosion_uniforms.p_min_slope = 0.0001f;     //decides the minimum capacity of the drop
+	erosion_uniforms.p_inertia = 0.1f;      // resistance to direction change
+	erosion_uniforms.p_min_slope = 0.0001f;     //decides the minimum capacity of the drop | decides how much erosion occurs drastically
 	erosion_uniforms.p_capacity = 4.0f;     //higher capacity = higher erosion | doesnt conserve soil
 	erosion_uniforms.p_deposition = 0.2f;      //keep small and lower than erosion | high dep causes hills to form
-	erosion_uniforms.p_erosion = 0.4f;      
+	erosion_uniforms.p_erosion = 0.7f;      
 	erosion_uniforms.p_gravity = 1.0f;      
-	erosion_uniforms.p_evaporation = 0.05f;   // higher evaporation helps retain original terrain
-	erosion_uniforms.p_radius = 2.0f;      // need bigger radius for bigger scales
+	erosion_uniforms.p_evaporation = 0.001f;   // higher evaporation helps retain original terrain
+	erosion_uniforms.p_radius = 8.0f;      // need bigger radius for bigger scales | smaller radius gives finer grooves | larger radius solves banding!!
 	erosion_uniforms.p_max_iteration = 100;       // maximum iterations per droplet
 
 	//generate the map
@@ -175,7 +175,8 @@ int main()
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		objectShader.use();
 
-		glm::vec4 bgCol = glm::vec4(0.529, 0.808, 0.922, 1.0f);
+		//glm::vec4 bgCol = glm::vec4(0.529, 0.808, 0.922, 1.0f);
+		glm::vec4 bgCol = glm::vec4(1.0f);
 		glClearColor(bgCol.x, bgCol.y, bgCol.z, 1.0);
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
