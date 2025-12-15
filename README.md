@@ -21,8 +21,8 @@ A real-time procedural terrain rendering engine built with OpenGL. It leverages 
 | -------------------- | --------------------------------------------------------------- |
 | **Terrain Sample 1** | ![Terrain Sample 1](Terrain%20Generation/Media/Screenshot%202025-11-01%20185701.png)     |
 | **Terrain Sample 2** | ![Terrain Sample 2](Terrain%20Generation/Media/Screenshot%202025-11-01%20204423.png) |
-| **Perlin-Based Generation** | ![Perlin-Based Generation](Terrain%20Generation/Media/Screenshot%202025-11-01%20203244.png) |
-| **After Erosion** | ![After Erosion](Terrain%20Generation/Media/Screenshot%202025-11-01%20203231.png) |
+| **Perlin-Based Generation** | ![Perlin-Based Generation](Terrain%20Generation/Media/snow_before.png) |
+| **After Erosion** | ![After Erosion](Terrain%20Generation/Media/snow_after.png) |
 
 ---
 
@@ -34,5 +34,6 @@ A real-time procedural terrain rendering engine built with OpenGL. It leverages 
 * **END GOAL**: Make the terrain a portable api that generates an interactble mesh, which can be used in a world-simulation project (future!!)
 
   ---
+
 
 
