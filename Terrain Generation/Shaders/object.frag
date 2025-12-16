@@ -3,12 +3,15 @@
 in vec3 Normal;
 in float height;
 in vec3 FragPos;
+in vec4 FragPosLightSpace;
 
 uniform float minHeight, maxHeight;
 uniform vec3 viewPos;
 uniform vec4 bgCol;
 uniform bool toggleFog;
 uniform bool toggleAtmosphere;
+
+uniform sampler2D depthMap;
 
 float far = maxHeight - minHeight;
 float near = 0.1f;
@@ -105,6 +108,16 @@ void main()
 	FragColor = result;
 }
 
+float calculateShadow(vec4 fragPosLS){
+
+    vec3 projCoords = fragPosLS.xyz / fragPosLS.w;
+    projCoords = projCoords * 0.5 + 0.5;
+    float closestDepth = texture(depthMap, projCoords.xy).r;
+    float currDepth = projCoords.z;
+
+    return currDepth > closestDepth ? 1.0f : 0.0f;
+}
+
 vec3 calculateDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 baseColor)
 {
     vec3 lightDir = normalize(-light.direction); // directional light
@@ -117,9 +130,10 @@ vec3 calculateDirLight(DirLight light, vec3 normal, vec3 viewDir, vec3 baseColor
     vec3 diffuse = light.diffuse * diff * baseColor;
     
     // Specular (Blinn-Phong uses halfway vector)
-    vec3 halfwayDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(normal, halfwayDir), 0.0), 256.0); 
-    vec3 specular = light.specular * spec;
-    
-    return ambient + diffuse;
+    //vec3 halfwayDir = normalize(lightDir + viewDir);
+    //float spec = pow(max(dot(normal, halfwayDir), 0.0), 256.0); 
+    //vec3 specular = light.specular * spec;
+
+    float shadow = calculateShadow(FragPosLightSpace);
+    return ambient +  (1.0f - shadow) * diffuse;
 }

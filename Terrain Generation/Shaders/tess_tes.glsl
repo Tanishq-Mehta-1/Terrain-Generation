@@ -5,6 +5,7 @@ layout (quads, fractional_odd_spacing, ccw) in;
 in vec2 TextureCoord[];
 
 uniform sampler2D heightMap;
+
 uniform float yScale;
 uniform float yShift;
 uniform float seaLevel;

@@ -119,9 +119,9 @@ int main()
 	// 1024, p0.45, s256.0f, o16, scale 1024, shift 512 nice valley
 	// scale = 2000, shift = 1000, rez = 50, mapsize = 6000 x 6000, p0.45, s0.00097, o16
 
-	float yScale = 1000, yShift = yScale/2;
+	float yScale = 750, yShift = yScale/2;
 	float seaLevel = -6000;
-	float rez = 50;
+	float rez = 30;
 
 	auto start = std::chrono::high_resolution_clock::now();
 
@@ -136,13 +136,13 @@ int main()
 	erosion_uniforms.p_deposition = 0.4f;      //keep small and lower than erosion | high dep causes hills to form
 	erosion_uniforms.p_erosion = 0.7f;      
 	erosion_uniforms.p_gravity = 100.0f;      
-	erosion_uniforms.p_evaporation = 0.001f;   // higher evaporation helps retain original terrain
+	erosion_uniforms.p_evaporation = 0.01f;   // higher evaporation helps retain original terrain
 	erosion_uniforms.p_radius = 10.0f;      // need bigger radius for bigger scales | smaller radius gives finer grooves | larger radius solves banding!!
 	erosion_uniforms.p_max_iteration = 100;       // maximum iterations per droplet
 
 	//generate the map
-	int mapSize_x = 2000, mapSize_z = 2000; 
-	double persistence = 0.35f, scale = 0.00097;//keep scale v small
+	int mapSize_x = 1000, mapSize_z = 1000; 
+	double persistence = 0.25f, scale = 0.00117;//keep scale v small
 	int octaves = 16;
 
 	//tMesh.map_dimensions = tGen.generateHeightmap(mapSize_x, mapSize_z, persistence, scale, octaves, FBM, write_to_file, tMesh.data);
@@ -158,8 +158,8 @@ int main()
 	std::cout << "Setup time: " << duration.count() << "ms\n";
 
 	////setting constant uniforms
-	glm::vec3 sun_color = glm::vec3(0.98, 0.85, 0.65);
-	glm::vec3 sun_dir = glm::vec3(-0.2, -1.0f, -0.3f);
+	glm::vec3 sun_color = glm::vec3(1.0f, 0.95f, 0.7f);
+	glm::vec3 sun_dir = glm::vec3(-1.0, -0.5f, 0.3f);
 
 	//render loop
 	while (!glfwWindowShouldClose(window))
@@ -172,11 +172,14 @@ int main()
 		processInput(window);
 
 		//first pass
-		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+		//glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		objectShader.use();
 
-		//glm::vec4 bgCol = glm::vec4(0.529, 0.808, 0.922, 1.0f);
-		glm::vec4 bgCol = glm::vec4(1.0f);
+		//sun_dir = glm::vec3(sin(currentTime), -0.2f, cos(currentTime));
+
+		glm::vec4 bgCol = glm::vec4(0.529, 0.808, 0.922, 1.0f);
+		bgCol = glm::vec4(sun_color, 1.0f);
+		//glm::vec4 bgCol = glm::vec4(1.0f);
 		glClearColor(bgCol.x, bgCol.y, bgCol.z, 1.0);
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
@@ -187,15 +190,15 @@ int main()
 		tRen.RenderTerrain(tMesh, sun_color, sun_dir, camera, screenWidth, screenHeight, handleToggle(toggleAtmosphere, toggleFog, toggleWireframe), bgCol);
 		glDisable(GL_CULL_FACE);
 
-		//second pass
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		////second pass
+		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		//glClear(GL_COLOR_BUFFER_BIT);
 
-		glClear(GL_COLOR_BUFFER_BIT);
-		screenShader.use();
-		glBindVertexArray(screenVAO);
-		glDisable(GL_DEPTH_TEST);
-		glBindTexture(GL_TEXTURE_2D, fb_color_buffer);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		//screenShader.use();
+		//glBindVertexArray(screenVAO);
+		//glDisable(GL_DEPTH_TEST);
+		//glBindTexture(GL_TEXTURE_2D, fb_color_buffer);
+		//glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		//swap buffers [front and back] and polls IO events
 		glfwSwapBuffers(window);

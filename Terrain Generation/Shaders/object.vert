@@ -6,6 +6,7 @@ layout (location = 1) in vec2 a_uv;
 out float height;
 out vec3 Normal;
 out vec3 FragPos;
+out vec4 FragPosLightSpace;
 
 uniform sampler2D heightMap;
 
@@ -16,6 +17,7 @@ uniform float seaLevel;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+uniform mat4 lightSpaceMatrix;
 
 void main()
 {
@@ -46,5 +48,6 @@ void main()
 		normal = vec3(0.0f, 1.0f, 0.0f);
 
 	Normal = mat3(transpose(inverse(model))) * normal;
-	FragPos = vec3(model * gl_Position);
+	FragPos = vec3(model * vec4(aPos, 1.0f));
+	FragPosLightSpace = lightSpaceMatrix * vec4(FragPos, 1.0f);
 }
