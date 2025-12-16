@@ -28,7 +28,7 @@ bool validCoord(vec2 coord, ivec2 size) {
 
 vec4 safeImageLoad(ivec2 coord, ivec2 size) {
   if (!validCoord(coord, size))
-    return vec4(0.0f);
+    return vec4(1.0f);
 
   return imageLoad(heightMap, coord);
 }
@@ -166,7 +166,7 @@ void main() {
   ivec2 size = imageSize(heightMap);
   ivec2 globalCoord = ivec2(gl_GlobalInvocationID.xy);
 
-  if (rand(globalCoord, 1292.021f) <= 0.7)
+  if (rand(globalCoord, 1292.021f) <= 0.8)
     return;
 
   float posx = globalCoord.x + rand(globalCoord, 1.0f);

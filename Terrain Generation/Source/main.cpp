@@ -133,7 +133,7 @@ int main()
 	erosion_uniforms.p_inertia = 0.4f;      // resistance to direction change
 	erosion_uniforms.p_min_slope = 0.001f;     //decides the minimum capacity of the drop | decides how much erosion occurs drastically
 	erosion_uniforms.p_capacity = 6.0f;     //higher capacity = higher erosion | doesnt conserve soil
-	erosion_uniforms.p_deposition = 0.4f;      //keep small and lower than erosion | high dep causes hills to form
+	erosion_uniforms.p_deposition = 0.2f;      //keep small and lower than erosion | high dep causes hills to form
 	erosion_uniforms.p_erosion = 0.7f;      
 	erosion_uniforms.p_gravity = 100.0f;      
 	erosion_uniforms.p_evaporation = 0.01f;   // higher evaporation helps retain original terrain
@@ -141,8 +141,8 @@ int main()
 	erosion_uniforms.p_max_iteration = 100;       // maximum iterations per droplet
 
 	//generate the map
-	int mapSize_x = 1000, mapSize_z = 1000; 
-	double persistence = 0.25f, scale = 0.00117;//keep scale v small
+	int mapSize_x = 1000, mapSize_z = 2000; 
+	double persistence = 0.35f, scale = 0.00107;//keep scale v small
 	int octaves = 16;
 
 	//tMesh.map_dimensions = tGen.generateHeightmap(mapSize_x, mapSize_z, persistence, scale, octaves, FBM, write_to_file, tMesh.data);

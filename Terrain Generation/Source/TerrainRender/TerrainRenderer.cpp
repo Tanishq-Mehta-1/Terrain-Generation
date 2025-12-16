@@ -32,8 +32,8 @@ void TerrainRenderer::setupSun(glm::vec3 sunCol, glm::vec3 sunDir) {
 	glm::vec3 sun_color = sunCol;
 	glm::vec3 sun_dir = sunDir;
 	shader.setVec3("dir.specular", 1.0f * sun_color);
-	shader.setVec3("dir.diffuse", 0.6f * sun_color);
-	shader.setVec3("dir.ambient", 0.3f * sun_color);
+	shader.setVec3("dir.diffuse", 0.5f * sun_color);
+	shader.setVec3("dir.ambient", 0.1f * sun_color);
 	shader.setVec3("dir.direction", sun_dir);
 }
 
@@ -153,8 +153,8 @@ glm::mat4 TerrainRenderer::createDepthMap(int dm_width, int dm_height, glm::vec3
 	glClear(GL_DEPTH_BUFFER_BIT);
 
 	drawCallDepth(tMesh.rez, tMesh.heightMap_texture);
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	return lightSpaceMatrix;
 }
