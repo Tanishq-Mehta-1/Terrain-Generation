@@ -13,6 +13,7 @@ A real-time procedural terrain rendering engine built with OpenGL. It leverages 
     * **Slope**: Steeper surfaces are realistically rendered as exposed rock.
 * **Atmospheric Effects**: Includes toggleable fog and atmospheric scattering to enhance realism and depth perception.
 * **Particle-Based Hydraulic Erosion**: Implements the particle-based hydraulic erosion method by *Hans Theobald Beyer (2015)*
+* **Real-time Shadows**: Implemented using shadow-mapping
 
 ---
 
@@ -21,8 +22,8 @@ A real-time procedural terrain rendering engine built with OpenGL. It leverages 
 | -------------------- | --------------------------------------------------------------- |
 | **Terrain Sample 1** | ![Terrain Sample 1](Terrain%20Generation/Media/Screenshot%202025-11-01%20185701.png)     |
 | **Terrain Sample 2** | ![Terrain Sample 2](Terrain%20Generation/Media/Screenshot%202025-11-01%20204423.png) |
-| **Perlin-Based Generation** | ![Perlin-Based Generation](Terrain%20Generation/Media/Screenshot%202025-11-01%20203244.png) |
-| **After Erosion** | ![After Erosion](Terrain%20Generation/Media/Screenshot%202025-11-01%20203231.png) |
+| **Perlin-Based Generation** | ![Perlin-Based Generation](Terrain%20Generation/Media/snow_before.png) |
+| **After Erosion** | ![After Erosion](Terrain%20Generation/Media/snow_after.png) |
 
 ---
 
@@ -31,8 +32,11 @@ A real-time procedural terrain rendering engine built with OpenGL. It leverages 
 * **Hydraulic Erosion**: Exploring and implementing a hydraulic erosion simulation to create more realistic riverbeds and terrain.
 * **Texture Mapping**: Blend detail textures (rock, grass, sand) in the fragment shader instead of solid colors for higher fidelity.
 * **Realistic Rendering**: using different techniques to generate a realistic terrain (shadowmaps, skybox, PCG trees...)
+* **Bugs**: need to deal with the directionality of perlin noise, which has been causing weird artifacts
 * **END GOAL**: Make the terrain a portable api that generates an interactble mesh, which can be used in a world-simulation project (future!!)
 
   ---
+
+
 
 
