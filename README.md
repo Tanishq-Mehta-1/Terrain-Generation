@@ -13,6 +13,7 @@ A real-time procedural terrain rendering engine built with OpenGL. It leverages 
     * **Slope**: Steeper surfaces are realistically rendered as exposed rock.
 * **Atmospheric Effects**: Includes toggleable fog and atmospheric scattering to enhance realism and depth perception.
 * **Particle-Based Hydraulic Erosion**: Implements the particle-based hydraulic erosion method by *Hans Theobald Beyer (2015)*
+* **Real-time Shadows**: Implemented using shadow-mapping
 
 ---
 
@@ -31,9 +32,11 @@ A real-time procedural terrain rendering engine built with OpenGL. It leverages 
 * **Hydraulic Erosion**: Exploring and implementing a hydraulic erosion simulation to create more realistic riverbeds and terrain.
 * **Texture Mapping**: Blend detail textures (rock, grass, sand) in the fragment shader instead of solid colors for higher fidelity.
 * **Realistic Rendering**: using different techniques to generate a realistic terrain (shadowmaps, skybox, PCG trees...)
+* **Bugs**: need to deal with the directionality of perlin noise, which has been causing weird artifacts
 * **END GOAL**: Make the terrain a portable api that generates an interactble mesh, which can be used in a world-simulation project (future!!)
 
   ---
+
 
 
 
